@@ -38,6 +38,28 @@ function MobileHome({ projects, navigate }) {
     });
   }, []);
 
+  // iOS Safari blocks video autoplay until the user touches the page once.
+  // On the very first touch/click anywhere, kick off all videos manually.
+  // (autoPlay+muted+playsInline still does the right thing on Android & most browsers.)
+  useEffect(() => {
+    const unlock = () => {
+      const el = trackRef.current;
+      if (!el) return;
+      el.querySelectorAll('video').forEach(v => {
+        const p = v.play();
+        if (p && p.catch) p.catch(() => {/* ignore — will retry on next gesture */});
+      });
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('click', unlock);
+    };
+    window.addEventListener('touchstart', unlock, { once: true, passive: true });
+    window.addEventListener('click', unlock, { once: true });
+    return () => {
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('click', unlock);
+    };
+  }, []);
+
   // Track which slide is centered + handle the silent teleport at the edges
   useEffect(() => {
     const el = trackRef.current;

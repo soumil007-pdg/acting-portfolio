@@ -79,12 +79,19 @@
 
         .physics-char {
             position: absolute;
+            top: 0; left: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             text-shadow: 0 0 5px rgba(125, 168, 255, 0.05);
             transition: color 0.3s, text-shadow 0.3s;
             white-space: pre;
+            /* GPU compositing — promote each char to its own layer so transform
+               updates never trigger layout/paint, only compositor recomposite. */
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
+            contain: layout style paint;
+            backface-visibility: hidden;
         }
 
         #wand {
@@ -999,12 +1006,19 @@
                                 });
                                 Composite.add(engine.world, box);
 
+                                // Set initial transform ONCE — parked chars never get touched again
+                                const _initX = centerX - cellWidth / 2;
+                                const _initY = centerY - col.lineHeight / 2;
+                                span.style.transform = `translate3d(${_initX}px, ${_initY}px, 0)`;
+
                                 connectedEntities.push({
                                     htmlNode: span, physicsBody: box,
                                     width: cellWidth, height: col.lineHeight,
+                                    halfW: cellWidth / 2, halfH: col.lineHeight / 2,
                                     originX: centerX, originY: centerY,
                                     originalColor: col.cssColor, colorVar: col.color,
-                                    healTimer: null, returnTimer: null
+                                    healTimer: null, returnTimer: null,
+                                    isParked: true   // skip in afterUpdate while at rest
                                 });
 
                                 cursorX += cellWidth;
@@ -1045,14 +1059,20 @@
                     });
                     Composite.add(engine.world, dropBox);
 
+                    const _dropInitX = dropCenterX - dropW / 2;
+                    const _dropInitY = dropCenterY - dropH / 2;
+                    dropSpan.style.transform = `translate3d(${_dropInitX}px, ${_dropInitY}px, 0)`;
+
                     connectedEntities.push({
                         htmlNode: dropSpan, physicsBody: dropBox,
                         width: dropW, height: dropH,
+                        halfW: dropW / 2, halfH: dropH / 2,
                         originX: dropCenterX, originY: dropCenterY,
                         originalColor: themeColors().accent,
                         colorVar: 'var(--accent)',
                         isDropcap: true,
-                        healTimer: null, returnTimer: null
+                        healTimer: null, returnTimer: null,
+                        isParked: true
                     });
 
                     measureCtx.font = col.font;
@@ -1180,25 +1200,28 @@
         // (layout is now inside buildLayout() above)
 
         // ── Sync physics → DOM ──────────────────────────────────────────
-        // For dynamic bodies (chars in flight) we read live physics positions.
-        // For STATIC bodies (chars at rest at their origin) we use the stored
-        // origin values directly — this guarantees pixel-perfect alignment and
-        // prevents sub-pixel drift from leaking through after a heal/return.
+        // OPTIMIZATION: instead of writing transforms for ALL ~800 chars every
+        // frame (massive layout/paint cost), we only touch the ones that are
+        // actively moving. Static (parked) chars get their transform set ONCE
+        // at creation and during heal — afterUpdate skips them completely.
+        //
+        // GPU path: translate3d() promotes each char to its own compositor
+        // layer (combined with will-change/contain in CSS), so transform
+        // updates become pure compositor recomposites — no layout, no paint.
         Events.on(engine, 'afterUpdate', () => {
-            connectedEntities.forEach(e => {
-                let x, y, angle;
-                if (e.physicsBody.isStatic) {
-                    x = e.originX;
-                    y = e.originY;
-                    angle = 0;
-                } else {
-                    x = e.physicsBody.position.x;
-                    y = e.physicsBody.position.y;
-                    angle = e.physicsBody.angle;
-                }
+            // Iterate by index to avoid forEach allocation overhead in a hot loop
+            for (let i = 0, n = connectedEntities.length; i < n; i++) {
+                const e = connectedEntities[i];
+                // Skip parked (static, at-origin) chars — nothing changed
+                if (e.isParked) continue;
+                const body = e.physicsBody;
+                if (body.isStatic) continue; // belt-and-suspenders
+                const x = body.position.x - e.halfW;
+                const y = body.position.y - e.halfH;
+                const angle = body.angle;
                 e.htmlNode.style.transform =
-                    `translate(${x - e.width / 2}px, ${y - e.height / 2}px) rotate(${angle}rad)`;
-            });
+                    `translate3d(${x}px, ${y}px, 0) rotate(${angle}rad)`;
+            }
             updateOrbs();
         });
 
@@ -1234,6 +1257,7 @@
 
                 entity.htmlNode.style.transition = 'color 0.3s, text-shadow 0.3s';
                 Body.setStatic(charBody, false);
+                entity.isParked = false;   // wake it up — afterUpdate will start syncing it
                 const c = themeColors();
                 entity.htmlNode.style.color = c.glow;
                 entity.htmlNode.style.textShadow = `0 0 10px ${c.glow}, 0 0 20px ${c.accent}`;
@@ -1260,8 +1284,13 @@
                     Body.setPosition(charBody, { x: entity.originX, y: entity.originY });
                     Body.setAngle(charBody, 0);
                     Body.setVelocity(charBody, { x: 0, y: 0 });
+                    // Snap DOM back to exact origin and re-park
+                    const _x = entity.originX - entity.halfW;
+                    const _y = entity.originY - entity.halfH;
+                    entity.htmlNode.style.transform = `translate3d(${_x}px, ${_y}px, 0)`;
                     entity.returnTimer = setTimeout(() => {
                         entity.htmlNode.style.transition = 'color 0.3s, text-shadow 0.3s';
+                        entity.isParked = true;   // park again — afterUpdate skips it
                     }, 1000);
                 }, 3000);
             });
