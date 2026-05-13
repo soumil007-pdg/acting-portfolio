@@ -178,7 +178,28 @@ function MobileHome({ projects, navigate }) {
               <div className="relative w-full h-full overflow-hidden rounded-[4px] shadow-[0_18px_40px_rgba(0,0,0,0.18)] bg-black">
                 <video
                   src={proj.hoverVideo}
-                  autoPlay muted loop playsInline
+                  autoPlay muted loop playsInline preload="auto"
+                  // disable remote playback / native fullscreen on iOS so the video
+                  // never falls back to a tap-to-play poster overlay
+                  disableRemotePlayback
+                  disablePictureInPicture
+                  x-webkit-airplay="deny"
+                  controls={false}
+                  ref={(el) => {
+                    if (!el) return;
+                    // Belt + suspenders: explicitly mute (some iOS versions need this
+                    // set as a property, not just the attribute) and kick off play().
+                    el.muted = true;
+                    el.defaultMuted = true;
+                    el.setAttribute('webkit-playsinline', 'true');
+                    const tryPlay = () => {
+                      const p = el.play();
+                      if (p && p.catch) p.catch(() => {/* will retry on next gesture */});
+                    };
+                    tryPlay();
+                    // Retry once metadata is loaded (covers cold-cache iOS)
+                    el.addEventListener('loadeddata', tryPlay, { once: true });
+                  }}
                   className="absolute inset-0 w-full h-full object-cover"
                   style={{ objectPosition: proj.videoPosition || 'center' }}
                 />
