@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F8F6F6;
+            --ink: #1C1C19;
+            --ink-soft: rgba(28, 28, 25, 0.82);
+            --ink-faint: rgba(28, 28, 25, 0.55);
+            --ink-faintest: rgba(28, 28, 25, 0.18);
+            --accent: #2C5BC4;
+            --accent-glow: #7DA8FF;
+            --accent-soft: #4A7BD9;
+        }
+
+        body.wand-dark {
+            --bg: #06121A;
+            --ink: #E6F8FB;
+            --ink-soft: rgba(230, 248, 251, 0.85);
+            --ink-faint: rgba(230, 248, 251, 0.55);
+            --ink-faintest: rgba(230, 248, 251, 0.20);
+            --accent: #22D3EE;
+            --accent-glow: #A5F3FC;
+            --accent-soft: #0EA5BB;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--ink);
+            font-family: 'Work Sans', sans-serif;
+            overflow: hidden;
+            cursor: crosshair;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            transition: background-color 0.6s ease;
+        }
+
+        .parchment-texture {
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 100;
+            transition: opacity 0.6s ease;
+        }
+
+        body.wand-dark .parchment-texture {
+            opacity: 0.08;
+        }
+
+        canvas { display: none; }
+
+        #text-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #lumos-glow {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 5;
+            background: radial-gradient(circle at 50% 50%, rgba(125, 168, 255, 0) 0%, transparent 0px);
+            transition: background 0.1s;
+        }
+
+        .physics-char {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 0 5px rgba(125, 168, 255, 0.05);
+            transition: color 0.3s, text-shadow 0.3s;
+            white-space: pre;
+        }
+
+        #wand {
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px;
+            height: 45px;
+            background: linear-gradient(to bottom, #ffffff 0%, var(--accent) 100%);
+            border-radius: 4px;
+            z-index: 110;
+            pointer-events: none;
+            transform-origin: center center;
+            box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent-glow);
+            opacity: 0;
+            transition: opacity 0.3s ease, background 0.6s ease, box-shadow 0.6s ease;
+        }
+
+        .magic-trail {
+            position: absolute;
+            top: 0; left: 0;
+            width: 12px;
+            height: 12px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 109;
+            box-shadow: 0 0 12px var(--accent), 0 0 24px var(--accent-glow);
+            opacity: 0;
+            transition: opacity 0.3s ease, box-shadow 0.6s ease;
+        }
+
+        .particle {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 108;
+            box-shadow: 0 0 8px currentColor;
+            transition: transform 0.6s ease-out, opacity 0.6s ease-out;
+        }
+
+        /* ── Portrait panel ───────────────────────────────────────────── */
+        #portrait-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 38vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: 1;
+            background: #1c1c19;
+        }
+
+        #portrait {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* ↓ Tweak these two lines to recenter:
+               object-position: <horizontal%> <vertical%>;
+                 0% = left/top, 50% = center, 100% = right/bottom
+               transform: scale(<zoom>);   1.0 = no zoom, 1.2 = 20% zoom-in     */
+            object-position: 50% 20%;
+            transform: scale(1.2);
+            filter: grayscale(1) contrast(1.05);
+            transition:
+                filter 1.5s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 6s cubic-bezier(0.22, 1, 0.36, 1),
+                object-position 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        #portrait-container:hover #portrait {
+            filter: grayscale(0) contrast(1);
+            transform: scale(1.0);
+            object-position: 50% 40%;
+        }
+
+        body.wand-dark #portrait {
+            filter: grayscale(1) contrast(1.05) brightness(0.7);
+        }
+
+        body.wand-dark #portrait-container:hover #portrait {
+            filter: grayscale(0) contrast(1) brightness(0.85);
+        }
+
+        #portrait-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        #portrait-label {
+            position: absolute;
+            bottom: 56px;
+            left: 56px;
+            font-family: 'Newsreader', serif;
+            font-style: italic;
+            font-weight: 400;
+            font-size: 64px;
+            color: #ffffff;
+            opacity: 0.95;
+            z-index: 3;
+            letter-spacing: -2.5px;
+            line-height: 1;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
+
+        #portrait-tag {
+            position: absolute;
+            top: 48px;
+            left: 56px;
+            font-family: 'Work Sans', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.7);
+            z-index: 3;
+        }
+
+        /* ── Goodreads bookshelf widget — right text column, bottom ──── */
+        #bookshelf {
+            position: fixed;
+            bottom: 48px;
+            right: 48px;
+            z-index: 50;
+            display: block;
+            max-width: 260px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .bookshelf-divider {
+            width: 24px;
+            height: 1px;
+            background: var(--ink-faintest);
+            margin-bottom: 12px;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+        #bookshelf:hover .bookshelf-divider {
+            width: 40px;
+            background: var(--accent);
+        }
+        .bookshelf-label {
+            font-family: 'Work Sans', sans-serif;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.42em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            display: block;
+            transition: color 0.4s ease, letter-spacing 0.4s ease;
+        }
+        .bookshelf-arrow {
+            display: inline-block;
+            margin-left: 6px;
+            font-weight: 400;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #bookshelf:hover .bookshelf-label {
+            color: var(--accent);
+        }
+        #bookshelf:hover .bookshelf-arrow {
+            transform: translate(3px, -3px);
+        }
+        .bookshelf-book {
+            display: block;
+            margin-top: 10px;
+            font-family: 'Newsreader', serif;
+            font-style: italic;
+            font-weight: 400;
+            font-size: 14px;
+            line-height: 1.35;
+            color: rgba(28,28,25,0);
+            max-height: 0;
+            overflow: hidden;
+            transition: color 0.6s ease, max-height 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+            white-space: pre-line;
+            letter-spacing: -0.2px;
+        }
+        .bookshelf-book.loaded {
+            color: var(--ink-soft);
+            max-height: 80px;
+        }
+        body.wand-dark .bookshelf-book.loaded {
+            color: rgba(230,248,251,0.85);
+        }
+        .bookshelf-author {
+            display: block;
+            margin-top: 4px;
+            font-family: 'Work Sans', sans-serif;
+            font-style: normal;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            color: var(--ink-faint);
+        }
+        .bookshelf-cover {
+            position: absolute;
+            top: 8px;
+            left: 270px;
+            width: 56px;
+            height: auto;
+            border-radius: 2px;
+            box-shadow:
+                0 1px 0 rgba(0,0,0,0.06) inset,
+                0 12px 28px rgba(0,0,0,0.18),
+                0 4px 10px rgba(0,0,0,0.12);
+            opacity: 0;
+            transform: translateY(8px) rotate(-4deg) scale(0.85);
+            transition:
+                opacity 0.5s ease,
+                transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+        #bookshelf:hover .bookshelf-cover.has-src {
+            opacity: 1;
+            transform: translateY(0) rotate(2deg) scale(1);
+        }
+
+        /* ── Decorative section markers (no physics) ──────────────────── */
+        .section-marker {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;          /* right-align inside the gutter */
+            gap: 10px;
+            z-index: 11;
+            pointer-events: none;
+            text-align: right;
+        }
+
+        .section-marker .num {
+            font-family: 'Newsreader', serif;
+            font-style: italic;
+            font-weight: 400;
+            font-size: 28px;
+            line-height: 1;
+            letter-spacing: -0.5px;
+            color: var(--accent);
+            opacity: 0.55;
+            transition: color 0.6s ease, opacity 0.6s ease;
+        }
+
+        body.wand-dark .section-marker .num {
+            opacity: 0.7;   /* cyan reads brighter on dark, but keep it editorial */
+        }
+
+        .section-marker .label {
+            font-family: 'Work Sans', sans-serif;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--accent);
+            line-height: 1.2;
+            transition: color 0.6s ease;
+            white-space: nowrap;
+        }
+
+        .section-rule {
+            position: absolute;
+            height: 1px;
+            background: var(--ink-faintest);
+            z-index: 11;
+            pointer-events: none;
+            transition: background 0.6s ease;
+        }
+
+        .accent-bar {
+            position: absolute;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent) 0%, transparent 100%);
+            z-index: 11;
+            pointer-events: none;
+            opacity: 0.4;
+            transition: background 0.6s ease;
+        }
+
+        .section-eyebrow {
+            position: absolute;
+            font-family: 'Work Sans', sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: var(--accent);
+            z-index: 11;
+            pointer-events: none;
+            transition: color 0.6s ease;
+        }
+
+        /* ── Hint ─────────────────────────────────────────────────────── */
+        #hint {
+            position: fixed;
+            bottom: 24px;
+            right: 32px;
+            font-family: 'Work Sans', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            z-index: 200;
+            pointer-events: none;
+            transition: opacity 0.3s ease, color 0.6s ease;
+        }
+
+        /* ── Game HUD: score panel (Lumos mode only) ─────────────────── */
+        #score-panel {
+            position: fixed;
+            top: 110px;
+            left: 36px;
+            z-index: 200;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            pointer-events: none;
+            font-family: 'Work Sans', sans-serif;
+        }
+
+        body.wand-dark #score-panel {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #score-panel .score-label {
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.45em;
+            text-transform: uppercase;
+            color: rgba(165, 243, 252, 0.65);
+            margin-bottom: 8px;
+        }
+
+        #score-panel .score-value {
+            font-family: 'Newsreader', serif;
+            font-style: italic;
+            font-weight: 300;
+            font-size: 64px;
+            line-height: 1;
+            color: #22D3EE;
+            text-shadow: 0 0 18px rgba(34, 211, 238, 0.8), 0 0 36px rgba(34, 211, 238, 0.45);
+            transform-origin: left center;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 1px;
+        }
+
+        #score-panel .score-hint {
+            margin-top: 10px;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: rgba(165, 243, 252, 0.45);
+        }
+
+        /* ── Energy orbs ─────────────────────────────────────────────── */
+        .energy-orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 60;
+            background: radial-gradient(circle at 35% 35%,
+                #FFFFFF 0%,
+                #A5F3FC 30%,
+                #22D3EE 65%,
+                rgba(34, 211, 238, 0) 100%);
+            box-shadow:
+                0 0 16px #22D3EE,
+                0 0 38px rgba(34, 211, 238, 0.55),
+                inset 0 0 8px rgba(255, 255, 255, 0.4);
+            animation: orb-spawn 0.4s ease-out, orb-pulse 1.6s ease-in-out 0.4s infinite;
+        }
+
+        @keyframes orb-spawn {
+            0%   { transform: scale(0); opacity: 0; }
+            60%  { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes orb-pulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50%      { transform: scale(1.12); filter: brightness(1.25); }
+        }
+
+        .score-pop {
+            position: fixed;
+            font-family: 'Newsreader', serif;
+            font-style: italic;
+            font-weight: 600;
+            font-size: 28px;
+            color: #A5F3FC;
+            text-shadow: 0 0 14px #22D3EE, 0 0 28px rgba(34, 211, 238, 0.6);
+            pointer-events: none;
+            z-index: 220;
+            transition: transform 1s ease-out, opacity 1s ease-out;
+            transform: translateY(0);
+        }
+
+        #hint kbd {
+            font-family: 'Work Sans', sans-serif;
+            background: var(--ink-faintest);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin: 0 2px;
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            transition: background 0.6s ease;
+        }
+
+        /* ── Mobile ≤ 768px ────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+                overflow-y: auto;
+                cursor: default;
+                -webkit-tap-highlight-color: transparent;
+                touch-action: pan-y;
+                background-color: var(--bg);
+            }
+
+            /* ── Hero portrait — scrolls naturally with the page ──────────── */
+            #portrait-container {
+                position: relative;          /* in-flow, not fixed */
+                width: 100vw;
+                height: 78vh;                /* magazine-cover hero */
+                z-index: 1;
+                box-shadow: none;
+            }
+            #portrait {
+                object-position: 50% 25% !important;
+                transform: scale(1.0) !important;
+                filter: grayscale(0.18) contrast(1.05) brightness(0.95) !important;
+                transition: filter 1.5s ease;
+            }
+            #portrait-container:hover #portrait {
+                transform: scale(1.0) !important;
+                object-position: 50% 25% !important;
+            }
+            body.wand-dark #portrait {
+                filter: grayscale(0.45) contrast(1.12) brightness(0.55) !important;
+            }
+            /* Strong cinematic vignette → name reads like a movie poster */
+            #portrait-overlay {
+                background: linear-gradient(
+                    to bottom,
+                    rgba(0,0,0,0.45) 0%,
+                    rgba(0,0,0,0) 28%,
+                    rgba(0,0,0,0) 50%,
+                    rgba(0,0,0,0.92) 100%
+                ) !important;
+            }
+            /* Refined hero typography */
+            #portrait-tag {
+                top: 26px;
+                left: 24px;
+                font-size: 9.5px;
+                letter-spacing: 0.45em;
+                color: rgba(255,255,255,0.85);
+            }
+            #portrait-label {
+                font-size: 76px;
+                bottom: 90px;             /* leave room for the role line */
+                left: 22px;
+                letter-spacing: -3.5px;
+                line-height: 0.85;
+                text-shadow: 0 6px 24px rgba(0,0,0,0.6);
+            }
+            /* Role line — sits just below the name */
+            #portrait-container .mobile-role {
+                position: absolute;
+                left: 24px;
+                bottom: 72px;
+                z-index: 4;
+                font-family: 'Newsreader', serif;
+                font-style: italic;
+                font-weight: 300;
+                font-size: 18px;
+                line-height: 1.3;
+                color: rgba(255,255,255,0.78);
+                max-width: 80vw;
+                letter-spacing: -0.3px;
+                text-shadow: 0 2px 12px rgba(0,0,0,0.45);
+            }
+            /* Scroll cue — bottom of the hero */
+            #portrait-container .mobile-scroll-cue {
+                position: absolute;
+                left: 24px;
+                bottom: 24px;
+                z-index: 4;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-family: 'Work Sans', sans-serif;
+                font-size: 9px;
+                font-weight: 500;
+                letter-spacing: 0.4em;
+                text-transform: uppercase;
+                color: rgba(255,255,255,0.55);
+            }
+            #portrait-container .mobile-scroll-cue::before {
+                content: '';
+                width: 32px;
+                height: 1px;
+                background: rgba(255,255,255,0.35);
+            }
+            #bookshelf { display: none; }
+
+            /* ── Text body — clean editorial column ───────────────────────── */
+            #text-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: auto;
+                z-index: 10;
+            }
+            #lumos-glow {
+                position: fixed;             /* viewport halo around tap */
+                top: 0; left: 0;
+                width: 100vw;
+                height: 100vh;
+                pointer-events: none;
+            }
+
+            /* Hint — pinned to viewport bottom-center, fades in dark mode */
+            #hint {
+                position: fixed;
+                bottom: 18px;
+                right: 0;
+                left: 0;
+                font-size: 9px;
+                letter-spacing: 0.32em;
+                text-align: center;
+                pointer-events: none;
+                opacity: 0.55;
+                z-index: 200;
+            }
+
+            /* Score panel — fixed top-left so it stays visible while reading */
+            #score-panel {
+                position: fixed;
+                top: 84px;                  /* clear of the React header */
+                left: 18px;
+                z-index: 60;
+            }
+            #score-panel .score-label {
+                font-size: 8px;
+                letter-spacing: 0.5em;
+                margin-bottom: 4px;
+            }
+            #score-panel .score-value {
+                font-size: 44px;
+                letter-spacing: 2px;
+            }
+            #score-panel .score-hint {
+                display: none;
+            }
+
+            /* ── Section markers — inline editorial chips ─────────────────── */
+            .section-marker {
+                flex-direction: row !important;
+                align-items: baseline !important;
+                gap: 14px !important;
+                text-align: left !important;
+            }
+            .section-marker::before {
+                content: '';
+                display: inline-block;
+                width: 18px;
+                height: 1px;
+                background: var(--accent);
+                opacity: 0.45;
+                transform: translateY(-6px);
+            }
+            .section-marker .num {
+                font-size: 26px;
+                letter-spacing: -0.5px;
+                opacity: 0.85;
+            }
+            .section-marker .label {
+                font-size: 9px;
+                letter-spacing: 0.45em;
+                opacity: 0.7;
+            }
+
+            /* Hide desktop-only decorative bars */
+            .accent-bar { display: none; }
+            .section-rule { opacity: 0.5; }
+
+            /* Wand chrome is desktop-only */
+            #wand, .magic-trail { display: none !important; }
+
+            /* Energy orbs — slightly bigger glow on small screens */
+            .energy-orb {
+                box-shadow:
+                    0 0 20px #22D3EE,
+                    0 0 44px rgba(34, 211, 238, 0.6),
+                    inset 0 0 10px rgba(255, 255, 255, 0.5);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="parchment-texture"></div>
+    <div id="lumos-glow"></div>
+
+    <div id="portrait-container">
+        <img id="portrait" src="/soumil-main.jpg" alt="Soumil" />
+        <div id="portrait-overlay"></div>
+        <div id="portrait-tag">Cinematic Legacy</div>
+        <div id="portrait-label">Soumil.</div>
+    </div>
+
+    <!-- Bookshelf widget — right text column, bottom -->
+    <a id="bookshelf"
+       href="https://www.goodreads.com/user/show/151293879-soumil"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Open Goodreads bookshelf">
+        <div class="bookshelf-divider"></div>
+        <span class="bookshelf-label">From my Bookshelf <span class="bookshelf-arrow">↗</span></span>
+        <span class="bookshelf-book" id="bookshelf-book"></span>
+        <img class="bookshelf-cover" id="bookshelf-cover" alt="" />
+    </a>
+
+    <div id="text-container"></div>
+    <div id="wand"></div>
+
+    <div id="hint" data-desktop="Press &lt;kbd&gt;Ctrl&lt;/kbd&gt;+&lt;kbd&gt;Shift&lt;/kbd&gt;+&lt;kbd&gt;W&lt;/kbd&gt; for Lumos mode" data-mobile="Tap the wand · then tap to cast">Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd> for Lumos mode</div>
+
+    <div id="score-panel">
+        <div class="score-label">Lumos Score</div>
+        <div class="score-value" id="score-value">0000</div>
+        <div class="score-hint">Click the orbs</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script type="module">
+        import { prepareWithSegments, layoutWithLines } from 'https://esm.sh/@chenglou/pretext@0.0.6';
+
+        const PALETTE = {
+            light: { accent: '#2C5BC4', glow: '#7DA8FF' },   // cobalt blue
+            dark:  { accent: '#22D3EE', glow: '#A5F3FC' }    // electric cyan
+        };
+        const themeColors = () =>
+            document.body.classList.contains('wand-dark') ? PALETTE.dark : PALETTE.light;
+
+        const Engine = Matter.Engine, Runner = Matter.Runner, Bodies = Matter.Bodies,
+              Composite = Matter.Composite, Body = Matter.Body, Events = Matter.Events;
+
+        const engine = Engine.create();
+        Runner.run(Runner.create(), engine);
+
+        // ground is rebuilt each time inside buildLayout
+        let groundBody = null;
+
+        // Layout dimensions — updated by buildLayout() on every (re)build
+        // so that wand, orb-spawn, and other handlers always have the current values
+        let W = window.innerWidth;
+        let H = window.innerHeight;
+        let startX = 0;
+        let TEXT_WIDTH = 0;
+
+        const measureCanvas = document.createElement('canvas');
+        const measureCtx = measureCanvas.getContext('2d');
+
+        // Tracks all physics char bodies so we can remove them on rebuild
+        const connectedEntities = [];
+        // Tracks decorative DOM nodes (markers, rules, bars, eyebrows) for cleanup
+        const decorativeNodes = [];
+
+        // Each column carries an optional `marker` (section number) and `eyebrow` (small uppercase label)
+        const columns = [
+            {
+                id: 'quote',
+                marker: '01',
+                eyebrow: 'Manifesto',
+                text: "'Art without science risks chaos, and science without art risks stagnation.'",
+                font: 'italic 400 44px/1.2 Newsreader, serif',
+                lineHeight: 56,
+                color: 'var(--ink)',
+                cssColor: '#1C1C19',
+                spacing: 28
+            },
+            {
+                text: 'FROM THE JOURNAL OF SOUMIL',
+                font: '500 11px/1.4 "Work Sans", sans-serif',
+                lineHeight: 18,
+                color: 'var(--accent)',
+                cssColor: PALETTE.light.accent,
+                letterSpacing: 4,
+                spacing: 64
+            },
+            {
+                id: 'bio',
+                marker: '02',
+                eyebrow: 'Biography',
+                accentBar: true,
+                dropcap: { lines: 2, font: 'italic 400 78px/1 Newsreader, serif' },
+                text: 'My journey into storytelling began as a search for hope within the pages of books. Reading allowed me to travel to distant lands where the rules of reality were rewritten. With every story, I lived an entirely new life, returning to the real world full of fresh experiences and the strength to restart.',
+                font: '400 17px/1.7 "Work Sans", sans-serif',
+                lineHeight: 30,
+                color: 'var(--ink-soft)',
+                cssColor: 'rgba(28,28,25,0.82)',
+                spacing: 22
+            },
+            {
+                accentBar: true,
+                dropcap: { lines: 2, font: 'italic 400 78px/1 Newsreader, serif' },
+                text: 'Today, my mission as a filmmaker is to reverse that flow. Instead of just seeking that refuge, I craft narratives to provide it. Through the visual stories I tell, I aim to build immersive worlds for my audience, offering them the same sense of hope, escape, and renewal that first inspired me.',
+                font: '400 17px/1.7 "Work Sans", sans-serif',
+                lineHeight: 30,
+                color: 'var(--ink-soft)',
+                cssColor: 'rgba(28,28,25,0.82)',
+                spacing: 56
+            },
+            {
+                id: 'meta',
+                marker: '03',
+                eyebrow: 'Coordinates',
+                rule: true,
+                text: 'FOCUS    ACTOR',
+                font: '500 13px/1.5 "Work Sans", sans-serif',
+                lineHeight: 26,
+                color: 'var(--ink)',
+                cssColor: '#1C1C19',
+                letterSpacing: 4,
+                spacing: 6
+            },
+            {
+                text: 'LOCATION    DELHI / INDIA',
+                font: '500 13px/1.5 "Work Sans", sans-serif',
+                lineHeight: 26,
+                color: 'var(--ink)',
+                cssColor: '#1C1C19',
+                letterSpacing: 4,
+                spacing: 0
+            }
+        ];
+
+        const container = document.getElementById('text-container');
+
+        // ── Teardown previous layout ─────────────────────────────────────
+        function teardownLayout() {
+            // Remove all character physics bodies
+            connectedEntities.forEach(e => {
+                clearTimeout(e.healTimer);
+                clearTimeout(e.returnTimer);
+                try { Composite.remove(engine.world, e.physicsBody); } catch (_) {}
+            });
+            connectedEntities.length = 0;
+            // Remove character DOM spans
+            container.innerHTML = '';
+            // Remove decorative nodes (markers, rules, bars, eyebrows)
+            decorativeNodes.forEach(n => { if (n.parentNode) n.parentNode.removeChild(n); });
+            decorativeNodes.length = 0;
+            // Remove old ground
+            if (groundBody) {
+                try { Composite.remove(engine.world, groundBody); } catch (_) {}
+                groundBody = null;
+            }
+        }
+
+        // ── Mobile detection (re-evaluated on every layout pass) ─────────
+        const isMobileNow = () => window.matchMedia('(max-width: 768px)').matches;
+
+        // Scale a CSS shorthand font's px size by a factor (clamped).
+        function scaleFontPx(font, factor) {
+            return font.replace(/(\d+)px/, (_, p) =>
+                `${Math.max(10, Math.round(parseInt(p, 10) * factor))}px`);
+        }
+
+        // For mobile: shrink fonts, line heights, and spacing so everything
+        // fits comfortably in a single narrow column. Heading/quote sizes
+        // shrink more aggressively than body copy.
+        function adaptColForMobile(col) {
+            const c = { ...col };
+            const isQuote = (c.font || '').includes('44px');
+            const isDropcap = !!c.dropcap;
+            const isHeading = isQuote || isDropcap;
+            const factor = isQuote ? 0.66 : (isDropcap ? 0.85 : 0.85);
+            if (c.font) c.font = scaleFontPx(c.font, factor);
+            if (c.lineHeight) c.lineHeight = Math.max(18, Math.round(c.lineHeight * (isQuote ? 0.72 : 0.92)));
+            // Generous spacing between sections — gives the page editorial rhythm
+            if (c.spacing != null) c.spacing = Math.max(20, Math.round(c.spacing * 1.1));
+            if (c.dropcap) {
+                c.dropcap = { ...c.dropcap };
+                c.dropcap.font = scaleFontPx(c.dropcap.font, 0.6);
+                c.dropcap.lines = 2;
+            }
+            return c;
+        }
+
+
+        // ── Build / rebuild layout ───────────────────────────────────────
+        function buildLayout() {
+            teardownLayout();
+
+            W = window.innerWidth;
+            H = window.innerHeight;
+            const MOBILE = isMobileNow();
+
+            let PORTRAIT_WIDTH, TEXT_GUTTER, HEADER_OFFSET;
+            if (MOBILE) {
+                PORTRAIT_WIDTH = 0;
+                TEXT_GUTTER = 0;
+                startX = 24;                                // 24px left padding
+                TEXT_WIDTH = Math.max(200, W - 48);         // 24px each side
+                HEADER_OFFSET = Math.round(0.78 * H) + 110; // start below the 78vh hero + editorial breathing room
+            } else {
+                PORTRAIT_WIDTH = 0.38 * W;
+                TEXT_GUTTER = 140;
+                startX = PORTRAIT_WIDTH + TEXT_GUTTER;
+                TEXT_WIDTH = Math.min(W - startX - 80, 620);
+                HEADER_OFFSET = 130;
+            }
+
+            // Recreate ground for new window size — final position is set
+            // *after* the columns loop so it sits below all the text on mobile.
+            groundBody = Bodies.rectangle(W / 2, H + 50, W * 2, 100, { isStatic: true, label: 'ground' });
+            Composite.add(engine.world, groundBody);
+
+            let currentY = HEADER_OFFSET;
+
+            // ── Build sections ────────────────────────────────────────────
+            columns.forEach(rawCol => {
+                const col = MOBILE ? adaptColForMobile(rawCol) : rawCol;
+                const sectionStartY = currentY;
+
+                if (col.rule) {
+                    const rule = document.createElement('div');
+                    rule.className = 'section-rule';
+                    rule.style.left = `${startX}px`;
+                    // Rule comes first, positioned above the marker
+                    rule.style.top = `${currentY - (MOBILE ? 48 : 32)}px`;
+                    rule.style.width = `${TEXT_WIDTH}px`;
+                    document.body.appendChild(rule);
+                    decorativeNodes.push(rule);
+                }
+
+                if (col.marker) {
+                    const marker = document.createElement('div');
+                    marker.className = 'section-marker';
+                    marker.innerHTML =
+                        `<span class="num">${col.marker}</span>` +
+                        (col.eyebrow ? `<span class="label">${col.eyebrow}</span>` : '');
+                    if (MOBILE) {
+                        // Inline below the rule (if present), left-aligned with the text column
+                        // Extra space below rule, then marker sits here
+                        marker.style.left = `${startX}px`;
+                        marker.style.right = 'auto';
+                        marker.style.top = `${currentY - (col.rule ? 28 : 36)}px`;
+                    } else {
+                        marker.style.right = `${W - startX + 28}px`;
+                        marker.style.top = `${currentY + 6}px`;
+                    }
+                    document.body.appendChild(marker);
+                    decorativeNodes.push(marker);
+                }
+
+                if (col.eyebrow && !col.marker) {
+                    const eb = document.createElement('div');
+                    eb.className = 'section-eyebrow';
+                    eb.textContent = col.eyebrow;
+                    eb.style.left = `${startX}px`;
+                    eb.style.top = `${currentY - 24}px`;
+                    document.body.appendChild(eb);
+                    decorativeNodes.push(eb);
+                }
+
+                measureCtx.font = col.font;
+                const letterSpacing = col.letterSpacing || 0;
+
+                function renderLines(linesArr, prep, baseX, baseY) {
+                    linesArr.forEach((line, lineIndex) => {
+                        let cursorX = 0;
+                        const si = line.start.segmentIndex;
+                        const ei = line.end.segmentIndex;
+
+                        for (let i = si; i < ei; i++) {
+                            const seg = prep.segments[i];
+                            if (!seg) continue;
+
+                            if (seg.trim() === '') {
+                                cursorX += measureCtx.measureText(seg).width;
+                                continue;
+                            }
+
+                            for (let ci = 0; ci < seg.length; ci++) {
+                                const char = seg[ci];
+                                const charWidth = measureCtx.measureText(char).width;
+                                const cellWidth = charWidth + letterSpacing;
+
+                                const centerX = baseX + cursorX + cellWidth / 2;
+                                const centerY = baseY + lineIndex * col.lineHeight + col.lineHeight / 2;
+
+                                const span = document.createElement('span');
+                                span.className = 'physics-char';
+                                span.textContent = char;
+                                span.style.font = col.font;
+                                span.style.color = col.cssColor;
+                                span.style.width = `${cellWidth}px`;
+                                span.style.height = `${col.lineHeight}px`;
+                                span.dataset.colorVar = col.color;
+                                container.appendChild(span);
+
+                                const box = Bodies.rectangle(centerX, centerY, cellWidth, col.lineHeight, {
+                                    label: 'char', isStatic: true, restitution: 0.7, friction: 0.05
+                                });
+                                Composite.add(engine.world, box);
+
+                                connectedEntities.push({
+                                    htmlNode: span, physicsBody: box,
+                                    width: cellWidth, height: col.lineHeight,
+                                    originX: centerX, originY: centerY,
+                                    originalColor: col.cssColor, colorVar: col.color,
+                                    healTimer: null, returnTimer: null
+                                });
+
+                                cursorX += cellWidth;
+                            }
+                        }
+                    });
+                }
+
+                let sectionHeight;
+
+                if (col.dropcap) {
+                    const dropChar = col.text[0];
+                    const restText = col.text.slice(1);
+                    const dropLines = col.dropcap.lines || 2;
+                    const dropFont = col.dropcap.font;
+                    const dropGap = 14;
+
+                    measureCtx.font = dropFont;
+                    const dropW = measureCtx.measureText(dropChar).width;
+                    const dropH = col.lineHeight * dropLines;
+
+                    const dropCenterX = startX + dropW / 2;
+                    const dropCenterY = currentY + dropH / 2 - 6;
+
+                    const dropSpan = document.createElement('span');
+                    dropSpan.className = 'physics-char';
+                    dropSpan.textContent = dropChar;
+                    dropSpan.style.font = dropFont;
+                    dropSpan.style.color = themeColors().accent;
+                    dropSpan.style.width = `${dropW}px`;
+                    dropSpan.style.height = `${dropH}px`;
+                    dropSpan.style.lineHeight = '1';
+                    dropSpan.dataset.colorVar = 'var(--accent)';
+                    container.appendChild(dropSpan);
+
+                    const dropBox = Bodies.rectangle(dropCenterX, dropCenterY, dropW, dropH, {
+                        label: 'char', isStatic: true, restitution: 0.7, friction: 0.05
+                    });
+                    Composite.add(engine.world, dropBox);
+
+                    connectedEntities.push({
+                        htmlNode: dropSpan, physicsBody: dropBox,
+                        width: dropW, height: dropH,
+                        originX: dropCenterX, originY: dropCenterY,
+                        originalColor: themeColors().accent,
+                        colorVar: 'var(--accent)',
+                        isDropcap: true,
+                        healTimer: null, returnTimer: null
+                    });
+
+                    measureCtx.font = col.font;
+                    const reducedWidth = Math.max(80, TEXT_WIDTH - dropW - dropGap);
+                    const prep1 = prepareWithSegments(restText, col.font);
+                    const { lines: aroundLines } = layoutWithLines(prep1, reducedWidth, col.lineHeight);
+                    const usedAround = aroundLines.slice(0, dropLines);
+
+                    renderLines(usedAround, prep1, startX + dropW + dropGap, currentY);
+
+                    let belowLineCount = 0;
+                    if (usedAround.length < aroundLines.length) {
+                        const lastSegIdx = usedAround[usedAround.length - 1].end.segmentIndex;
+                        const remainingText = prep1.segments.slice(lastSegIdx).join('').replace(/^\s+/, '');
+                        if (remainingText) {
+                            const prep2 = prepareWithSegments(remainingText, col.font);
+                            const { lines: belowLines } = layoutWithLines(prep2, TEXT_WIDTH, col.lineHeight);
+                            renderLines(belowLines, prep2, startX, currentY + dropLines * col.lineHeight);
+                            belowLineCount = belowLines.length;
+                        }
+                    }
+
+                    sectionHeight = Math.max(dropH, (usedAround.length + belowLineCount) * col.lineHeight);
+                } else {
+                    const prepared = prepareWithSegments(col.text, col.font);
+                    const { lines } = layoutWithLines(prepared, TEXT_WIDTH, col.lineHeight);
+                    renderLines(lines, prepared, startX, currentY);
+                    sectionHeight = lines.length * col.lineHeight;
+                }
+
+                if (col.accentBar) {
+                    const bar = document.createElement('div');
+                    bar.className = 'accent-bar';
+                    bar.style.left = `${startX - 24}px`;
+                    bar.style.top = `${sectionStartY + 4}px`;
+                    bar.style.height = `${sectionHeight - 4}px`;
+                    document.body.appendChild(bar);
+                    decorativeNodes.push(bar);
+                }
+
+                currentY += sectionHeight + (col.spacing || 20);
+            });
+
+            // ── Post-layout: enable scrolling on mobile + reposition ground ──
+            const totalHeight = currentY + 80;
+            if (MOBILE) {
+                // Make the page scrollable so the user can read past the portrait strip
+                document.body.style.minHeight = `${totalHeight}px`;
+                container.style.minHeight = `${totalHeight}px`;
+                // Drop the ground just below the last line so falling letters stop
+                // where the user can actually see them after scrolling
+                Body.setPosition(groundBody, { x: W / 2, y: totalHeight + 40 });
+            } else {
+                document.body.style.minHeight = '';
+                container.style.minHeight = '';
+            }
+        }
+
+        // ── Mobile hero overlays (role line + scroll cue) ────────────────
+        function ensureMobileHeroOverlays() {
+            const portraitContainer = document.getElementById('portrait-container');
+            if (!portraitContainer) return;
+            const exists = portraitContainer.querySelector('.mobile-role');
+            const shouldExist = isMobileNow();
+            if (shouldExist && !exists) {
+                const role = document.createElement('div');
+                role.className = 'mobile-role';
+                role.textContent = 'Filmmaker, theatre artist, and storyteller — based in Delhi.';
+                portraitContainer.appendChild(role);
+
+                const cue = document.createElement('div');
+                cue.className = 'mobile-scroll-cue';
+                cue.textContent = 'Scroll to read';
+                portraitContainer.appendChild(cue);
+            } else if (!shouldExist && exists) {
+                portraitContainer.querySelectorAll('.mobile-role, .mobile-scroll-cue').forEach(n => n.remove());
+            }
+        }
+
+        // Initial build
+        ensureMobileHeroOverlays();
+        buildLayout();
+        updateHintForViewport();
+
+        // Debounced resize — rebuilds layout to match new window dimensions
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                ensureMobileHeroOverlays();
+                buildLayout();
+                updateHintForViewport();
+            }, 180);
+        });
+
+        function updateHintForViewport() {
+            const hintEl = document.getElementById('hint');
+            if (!hintEl) return;
+            hintEl.innerHTML = isMobileNow()
+                ? 'Tap the wand · then tap to cast'
+                : 'Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd> for Lumos mode';
+        }
+
+        function spawnParticle(x, y) {
+            const c = themeColors();
+            const colors = [c.accent, c.glow, '#ffffff'];
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const pick = colors[Math.floor(Math.random() * colors.length)];
+            p.style.backgroundColor = pick;
+            p.style.color = pick;          // drives box-shadow via currentColor
+            p.style.left = `${x}px`;
+            p.style.top = `${y}px`;
+            document.body.appendChild(p);
+
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 80 + 20;
+            requestAnimationFrame(() => {
+                p.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0)`;
+                p.style.opacity = '0';
+            });
+            setTimeout(() => p.remove(), 600);
+        }
+
+        // (layout is now inside buildLayout() above)
+
+        // ── Sync physics → DOM ──────────────────────────────────────────
+        // For dynamic bodies (chars in flight) we read live physics positions.
+        // For STATIC bodies (chars at rest at their origin) we use the stored
+        // origin values directly — this guarantees pixel-perfect alignment and
+        // prevents sub-pixel drift from leaking through after a heal/return.
+        Events.on(engine, 'afterUpdate', () => {
+            connectedEntities.forEach(e => {
+                let x, y, angle;
+                if (e.physicsBody.isStatic) {
+                    x = e.originX;
+                    y = e.originY;
+                    angle = 0;
+                } else {
+                    x = e.physicsBody.position.x;
+                    y = e.physicsBody.position.y;
+                    angle = e.physicsBody.angle;
+                }
+                e.htmlNode.style.transform =
+                    `translate(${x - e.width / 2}px, ${y - e.height / 2}px) rotate(${angle}rad)`;
+            });
+            updateOrbs();
+        });
+
+        // ── Collision: scatter + heal (and orb hits) ────────────────────
+        Events.on(engine, 'collisionStart', ({ pairs }) => {
+            pairs.forEach(({ bodyA, bodyB }) => {
+                // Bullet ↔ orb (game)
+                let orbBody = null, bulletForOrb = null;
+                if (bodyA.label === 'bullet' && bodyB.label === 'orb') { bulletForOrb = bodyA; orbBody = bodyB; }
+                else if (bodyB.label === 'bullet' && bodyA.label === 'orb') { bulletForOrb = bodyB; orbBody = bodyA; }
+                if (orbBody && bulletForOrb) {
+                    const orb = orbs.find(o => o.body === orbBody);
+                    if (orb && !orb.removed) {
+                        score += orb.points;
+                        updateScoreDisplay();
+                        showScorePop(orbBody.position.x, orbBody.position.y, orb.points);
+                        for (let i = 0; i < 14; i++) spawnParticle(orbBody.position.x, orbBody.position.y);
+                        removeOrb(orb);
+                    }
+                }
+
+                // Bullet ↔ character (existing scatter behaviour)
+                let charBody = null, bulletBody = null;
+                if (bodyA.label === 'bullet' && bodyB.label === 'char') { bulletBody = bodyA; charBody = bodyB; }
+                else if (bodyB.label === 'bullet' && bodyA.label === 'char') { bulletBody = bodyB; charBody = bodyA; }
+                if (!charBody || !bulletBody) return;
+
+                const entity = connectedEntities.find(e => e.physicsBody === charBody);
+                if (!entity) return;
+
+                clearTimeout(entity.healTimer);
+                clearTimeout(entity.returnTimer);
+
+                entity.htmlNode.style.transition = 'color 0.3s, text-shadow 0.3s';
+                Body.setStatic(charBody, false);
+                const c = themeColors();
+                entity.htmlNode.style.color = c.glow;
+                entity.htmlNode.style.textShadow = `0 0 10px ${c.glow}, 0 0 20px ${c.accent}`;
+
+                for (let i = 0; i < 4; i++) spawnParticle(charBody.position.x, charBody.position.y);
+
+                const dx = charBody.position.x - bulletBody.position.x;
+                const dy = charBody.position.y - bulletBody.position.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                Body.applyForce(charBody, charBody.position, {
+                    x: (dx / dist) * 0.0035,
+                    y: (dy / dist) * 0.0035 - 0.002
+                });
+
+                entity.healTimer = setTimeout(() => {
+                    entity.htmlNode.style.transition = 'transform 1s ease-in-out, color 1s, text-shadow 1s';
+                    // Restore color — pick whichever variant matches current theme
+                    const isDark = document.body.classList.contains('wand-dark');
+                    entity.htmlNode.style.color = isDark
+                        ? getDarkColor(entity.originalColor)
+                        : entity.originalColor;
+                    entity.htmlNode.style.textShadow = '0 0 5px rgba(125,168,255,0)';
+                    Body.setStatic(charBody, true);
+                    Body.setPosition(charBody, { x: entity.originX, y: entity.originY });
+                    Body.setAngle(charBody, 0);
+                    Body.setVelocity(charBody, { x: 0, y: 0 });
+                    entity.returnTimer = setTimeout(() => {
+                        entity.htmlNode.style.transition = 'color 0.3s, text-shadow 0.3s';
+                    }, 1000);
+                }, 3000);
+            });
+        });
+
+        // ── Dark-mode color mapping for physics chars ───────────────────
+        function getDarkColor(originalLight) {
+            // Map each light-mode color to its dark-mode counterpart
+            const map = {
+                '#1C1C19': '#E6F8FB',
+                '#2C5BC4': '#22D3EE',
+                'rgba(28,28,25,0.82)': 'rgba(230,248,251,0.88)',
+                'rgba(28,28,25,0.55)': 'rgba(230,248,251,0.55)',
+            };
+            return map[originalLight] || originalLight;
+        }
+
+        function applyThemeToChars(isDark) {
+            const themeAccent = (isDark ? PALETTE.dark : PALETTE.light).accent;
+            connectedEntities.forEach(e => {
+                if (e.isDropcap) {
+                    e.htmlNode.style.color = themeAccent;
+                    e.originalColor = themeAccent;   // keep heal-back in sync
+                } else {
+                    e.htmlNode.style.color = isDark
+                        ? getDarkColor(e.originalColor)
+                        : e.originalColor;
+                }
+            });
+        }
+
+        // ── Wand mode + dark-mode toggle ────────────────────────────────
+        let isWandMode = false;
+        const wand = document.getElementById('wand');
+        const lumos = document.getElementById('lumos-glow');
+        const hint = document.getElementById('hint');
+
+        const NUM_TRAIL = 12;
+        const trail = Array.from({ length: NUM_TRAIL }, (_, i) => {
+            const seg = document.createElement('div');
+            seg.className = 'magic-trail';
+            seg.style.transform = `scale(${(1 - i / NUM_TRAIL).toFixed(2)})`;
+            document.body.appendChild(seg);
+            return seg;
+        });
+
+        function toggleWandMode() {
+            isWandMode = !isWandMode;
+            const MOBILE = isMobileNow();
+            // Wand cursor + trail are desktop-only — on touch we use tap bursts instead
+            if (!MOBILE) {
+                wand.style.opacity = isWandMode ? '1' : '0';
+                trail.forEach(s => s.style.opacity = isWandMode ? '0.8' : '0');
+                document.body.style.cursor = isWandMode ? 'none' : 'crosshair';
+            }
+            hint.style.opacity = isWandMode ? '0' : '1';
+
+            // Disable / re-enable the bookshelf link in wand mode
+            const bookshelf = document.getElementById('bookshelf');
+            if (bookshelf) {
+                bookshelf.style.pointerEvents = isWandMode ? 'none' : 'auto';
+                bookshelf.style.opacity     = isWandMode ? '0.25' : '1';
+                bookshelf.style.transition  = 'opacity 0.4s ease';
+            }
+
+            // Toggle dark mode for the page
+            document.body.classList.toggle('wand-dark', isWandMode);
+            applyThemeToChars(isWandMode);
+
+            // Game on/off
+            if (isWandMode) startGame();
+            else stopGame();
+
+            // Notify parent (React) so the header can switch theme too
+            try {
+                parent.postMessage({
+                    type: 'biography-wand-mode',
+                    isDark: isWandMode,
+                    score: score
+                }, '*');
+            } catch (e) { /* ignore */ }
+        }
+
+        // ── Mini-game: shoot the energy orbs ────────────────────────────
+        let score = 0;
+        let orbSpawnTimer = null;
+        const orbs = [];
+        const scoreEl = document.getElementById('score-value');
+
+        function fmtScore(n) {
+            return String(n).padStart(4, '0');
+        }
+
+        function updateScoreDisplay() {
+            if (!scoreEl) return;
+            scoreEl.textContent = fmtScore(score);
+            scoreEl.style.transform = 'scale(1.25)';
+            setTimeout(() => { scoreEl.style.transform = 'scale(1)'; }, 220);
+        }
+
+        function spawnOrb() {
+            if (!isWandMode) return;
+            // Three sizes — smaller orbs are worth more
+            const tiers = [
+                { px: 22, points: 30, ttl: 4500 },
+                { px: 32, points: 20, ttl: 5500 },
+                { px: 44, points: 10, ttl: 6500 }
+            ];
+            const t = tiers[Math.floor(Math.random() * tiers.length)];
+
+            // Spawn area depends on layout:
+            //  • Desktop → anywhere right of the portrait
+            //  • Mobile  → anywhere in the *visible* viewport (orbs are
+            //              position:fixed, so they stay where the user is reading)
+            const MOBILE = isMobileNow();
+            let minX, maxX, minY, maxY;
+            if (MOBILE) {
+                minX = 30;
+                maxX = window.innerWidth - 30;
+                minY = 140;                                  // clear of React header
+                maxY = window.innerHeight - 80;
+            } else {
+                minX = startX - 60;
+                maxX = W - 60;
+                minY = 130;
+                maxY = H - 80;
+            }
+            const x = minX + Math.random() * (maxX - minX);
+            const y = minY + Math.random() * (maxY - minY);
+
+            const div = document.createElement('div');
+            div.className = 'energy-orb';
+            div.style.width = `${t.px}px`;
+            div.style.height = `${t.px}px`;
+            div.style.left = `${x - t.px / 2}px`;
+            div.style.top = `${y - t.px / 2}px`;
+            document.body.appendChild(div);
+
+            const body = Bodies.circle(x, y, t.px / 2, {
+                label: 'orb', isStatic: true, isSensor: true
+            });
+            Composite.add(engine.world, body);
+
+            // Floating motion: slow linear drift + per-axis sine bob, all randomized
+            const orb = {
+                div, body,
+                points: t.points,
+                size: t.px,
+                cx: x, cy: y,
+                vx: (Math.random() - 0.5) * 0.7,        // drift px/frame
+                vy: (Math.random() - 0.5) * 0.5,
+                bobAmpX: 6 + Math.random() * 14,        // px
+                bobAmpY: 5 + Math.random() * 12,
+                bobFreqX: 0.8 + Math.random() * 0.7,    // rad/sec
+                bobFreqY: 1.1 + Math.random() * 0.9,
+                bobPhaseX: Math.random() * Math.PI * 2,
+                bobPhaseY: Math.random() * Math.PI * 2,
+                bornAt: performance.now(),
+                ttl: null
+            };
+
+            // Auto-fade after TTL
+            orb.ttl = setTimeout(() => {
+                if (orb.removed) return;
+                div.style.transition = 'opacity 0.5s ease';
+                div.style.opacity = '0';
+                setTimeout(() => removeOrb(orb), 500);
+            }, t.ttl);
+
+            orbs.push(orb);
+        }
+
+        // Drift + bob each frame. Hooked into the existing physics tick.
+        function updateOrbs() {
+            if (!orbs.length) return;
+            const now = performance.now();
+            const MOBILE = isMobileNow();
+            const padX = 40, padTop = 110, padBottom = 60;
+            const leftBound = MOBILE ? 30 : startX - padX;
+            const rightBound = MOBILE ? window.innerWidth - 30 : W - padX;
+            const topBound = MOBILE ? 140 : padTop;
+            const bottomBound = MOBILE ? window.innerHeight - 80 : H - padBottom;
+            for (let i = 0; i < orbs.length; i++) {
+                const o = orbs[i];
+                if (o.removed) continue;
+
+                // Linear drift, with reflection off soft bounds
+                o.cx += o.vx;
+                o.cy += o.vy;
+                if (o.cx < leftBound) { o.cx = leftBound; o.vx = Math.abs(o.vx); }
+                else if (o.cx > rightBound) { o.cx = rightBound; o.vx = -Math.abs(o.vx); }
+                if (o.cy < topBound)        { o.cy = topBound; o.vy = Math.abs(o.vy); }
+                else if (o.cy > bottomBound) { o.cy = bottomBound; o.vy = -Math.abs(o.vy); }
+
+                // Wandering bob on top of the drift
+                const t = (now - o.bornAt) / 1000;
+                const x = o.cx + Math.sin(t * o.bobFreqX + o.bobPhaseX) * o.bobAmpX;
+                const y = o.cy + Math.sin(t * o.bobFreqY + o.bobPhaseY) * o.bobAmpY;
+
+                o.div.style.left = `${x - o.size / 2}px`;
+                o.div.style.top  = `${y - o.size / 2}px`;
+                Body.setPosition(o.body, { x, y });
+            }
+        }
+
+        function removeOrb(orb) {
+            if (orb.removed) return;
+            orb.removed = true;
+            clearTimeout(orb.ttl);
+            try { Composite.remove(engine.world, orb.body); } catch (e) {}
+            if (orb.div && orb.div.parentNode) orb.div.parentNode.removeChild(orb.div);
+            const i = orbs.indexOf(orb);
+            if (i > -1) orbs.splice(i, 1);
+        }
+
+        function showScorePop(x, y, points) {
+            const pop = document.createElement('div');
+            pop.className = 'score-pop';
+            pop.textContent = `+${points}`;
+            pop.style.left = `${x - 14}px`;
+            pop.style.top = `${y - 20}px`;
+            document.body.appendChild(pop);
+            requestAnimationFrame(() => {
+                pop.style.transform = 'translateY(-60px)';
+                pop.style.opacity = '0';
+            });
+            setTimeout(() => pop.remove(), 1000);
+        }
+
+        function startGame() {
+            score = 0;
+            updateScoreDisplay();
+            if (orbSpawnTimer) clearInterval(orbSpawnTimer);
+            // First orb appears almost immediately, then on a steady interval
+            setTimeout(spawnOrb, 400);
+            orbSpawnTimer = setInterval(spawnOrb, 1700);
+        }
+
+        function stopGame() {
+            if (orbSpawnTimer) { clearInterval(orbSpawnTimer); orbSpawnTimer = null; }
+            [...orbs].forEach(removeOrb);
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && e.shiftKey && (e.key === 'W' || e.key === 'w')) {
+                toggleWandMode();
+            }
+        });
+
+        // Listen for parent telling us to toggle (in case the keypress is captured by React)
+        window.addEventListener('message', e => {
+            if (e.data && e.data.type === 'biography-toggle-wand') {
+                toggleWandMode();
+            }
+        });
+
+        let prevMouseX = W / 2, prevMouseY = H / 2, currentAngle = 0;
+        const history = [];
+
+        document.addEventListener('mousemove', e => {
+            // Mobile uses tap-based wand bursts — no mousemove follow
+            if (isMobileNow()) return;
+            const mouseX = e.clientX, mouseY = e.clientY;
+            const dx = mouseX - prevMouseX, dy = mouseY - prevMouseY;
+
+            if (isWandMode) {
+                const c = themeColors();
+                // Convert hex glow to rgba(...,0.14) for the radial halo
+                lumos.style.background =
+                    `radial-gradient(circle at ${mouseX}px ${mouseY}px, ${c.glow}26 0%, transparent 320px)`;
+                if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+                    currentAngle = Math.atan2(dy, dx);
+                    spawnParticle(mouseX, mouseY);
+                }
+                wand.style.transform =
+                    `translate(${mouseX - 2}px, ${mouseY - 25}px) rotate(${currentAngle + Math.PI / 2}rad)`;
+                history.unshift({ x: mouseX, y: mouseY });
+                if (history.length > NUM_TRAIL * 3) history.pop();
+                trail.forEach((seg, i) => {
+                    const pt = history[i * 3];
+                    if (pt) { seg.style.left = `${pt.x - 6}px`; seg.style.top = `${pt.y - 6}px`; }
+                });
+            }
+            prevMouseX = mouseX; prevMouseY = mouseY;
+        });
+
+        // ─── Original bullet-flight mechanic ────────────────────────────────
+        // Spawn a Matter bullet at the click/tap point with velocity aimed
+        // toward the center of the screen. Bullets travel through the page
+        // and collide with character bodies via the existing collisionStart
+        // handler, which knocks letters around with physics and schedules
+        // their return to origin.
+        function fireBullet(clientX, clientY) {
+            if (!isWandMode) return;
+            // Document coords so bullets hit chars even after the page scrolls
+            const docX = clientX;
+            const docY = clientY + window.scrollY;
+            const bullet = Bodies.circle(docX, docY, 30, {
+                label: 'bullet', restitution: 0.9, density: 1.0
+            });
+            const dx = (W / 2) - clientX, dy = (H / 2) - clientY;
+            const a = Math.atan2(dy, dx);
+            Body.setVelocity(bullet, { x: Math.cos(a) * 40, y: Math.sin(a) * 40 });
+            Composite.add(engine.world, bullet);
+            setTimeout(() => Composite.remove(engine.world, bullet), 2000);
+        }
+
+        // Suppress the synthetic mousedown that fires ~300ms after touchstart
+        let lastTouchAt = 0;
+        document.addEventListener('touchstart', e => {
+            if (!isWandMode) return;
+            const t = e.touches[0];
+            if (!t) return;
+            lastTouchAt = Date.now();
+            fireBullet(t.clientX, t.clientY);
+        }, { passive: true });
+
+        document.addEventListener('mousedown', e => {
+            if (!isWandMode) return;
+            if (Date.now() - lastTouchAt < 600) return; // ignore synthetic event
+            fireBullet(e.clientX, e.clientY);
+        });
+
+        // ─── Goodreads bookshelf live pull ─────────────────────────────
+        // Fetches the user's "currently-reading" shelf via RSS through a
+        // CORS proxy, then scrambles in the title (Westworld-intro style).
+        // Falls back silently — the link itself always works.
+        (async function loadBookshelf() {
+            const GOODREADS_USER_ID = '151293879';
+            const rssUrl = `https://www.goodreads.com/review/list_rss/${GOODREADS_USER_ID}?shelf=currently-reading`;
+
+            // Try a few proxies. allorigins.win is the most permissive.
+            const proxies = [
+                u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+                u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+                u => `https://thingproxy.freeboard.io/fetch/${u}`
+            ];
+
+            async function fetchVia(proxy) {
+                try {
+                    const res = await fetch(proxy(rssUrl), { cache: 'no-store' });
+                    if (!res.ok) return null;
+                    const txt = await res.text();
+                    if (!txt || txt.length < 50) return null;
+                    return txt;
+                } catch { return null; }
+            }
+
+            let xmlText = null;
+            for (const p of proxies) {
+                xmlText = await fetchVia(p);
+                if (xmlText) break;
+            }
+
+            // If everything failed, try the "read" shelf (most-recent finished)
+            if (!xmlText) {
+                const fallbackUrl = `https://www.goodreads.com/review/list_rss/${GOODREADS_USER_ID}?shelf=read`;
+                for (const p of proxies) {
+                    try {
+                        const res = await fetch(p(fallbackUrl), { cache: 'no-store' });
+                        if (res.ok) { xmlText = await res.text(); break; }
+                    } catch {}
+                }
+            }
+            if (!xmlText) return;  // bookshelf link still works as a fallback
+
+            let title, author, cover;
+            try {
+                const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+                const item = doc.querySelector('item');
+                if (!item) return;
+                title  = (item.querySelector('title')?.textContent || '').trim();
+                author = (item.querySelector('author_name')?.textContent || '').trim();
+                cover  = (
+                    item.querySelector('book_large_image_url')?.textContent ||
+                    item.querySelector('book_image_url')?.textContent ||
+                    item.querySelector('book_medium_image_url')?.textContent ||
+                    ''
+                ).trim();
+
+                // Some RSS feeds wrap image URLs in CDATA — strip whitespace/quotes
+                cover = cover.replace(/^['"]|['"]$/g, '');
+            } catch { return; }
+
+            if (!title) return;
+
+            const bookEl = document.getElementById('bookshelf-book');
+            const coverEl = document.getElementById('bookshelf-cover');
+
+            // Reveal the container, then scramble in the title
+            bookEl.classList.add('loaded');
+            const fullText = author
+                ? `“${title}”\n${author}`
+                : `“${title}”`;
+            scrambleIn(bookEl, fullText, 1400);
+
+            if (cover) {
+                coverEl.src = cover;
+                coverEl.classList.add('has-src');
+            }
+        })();
+
+        // Westworld-style scramble: random characters lock in left → right
+        function scrambleIn(el, finalText, duration = 1200) {
+            const chars = '!<>-_\\/[]{}—=+*^?#______ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+            const start = performance.now();
+            const total = finalText.length;
+            (function tick(now) {
+                const t = Math.min((now - start) / duration, 1);
+                // Ease-out so the locking-in slows toward the end
+                const eased = 1 - Math.pow(1 - t, 3);
+                const lockedCount = Math.floor(eased * total);
+                let out = '';
+                for (let i = 0; i < total; i++) {
+                    const c = finalText[i];
+                    if (i < lockedCount || c === ' ' || c === '\n' || c === '“' || c === '”') {
+                        out += c;
+                    } else {
+                        out += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                }
+                el.textContent = out;
+                if (t < 1) requestAnimationFrame(tick);
+                else el.textContent = finalText;
+            })(start);
+        }
+    </script>
+</body>
+
+</html>
