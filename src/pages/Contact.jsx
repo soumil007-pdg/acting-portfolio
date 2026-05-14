@@ -262,9 +262,9 @@ export default function Contact() {
         /* The letter (sits inside the envelope, slides up when opened) */
         .letter {
           position: absolute;
-          left: 8%; right: 8%;
-          top: 22%;
-          height: 78%;
+          left: 6%; right: 6%;
+          top: 15%;
+          height: 85%;
           background: #fbf6ee;
           border-radius: 3px;
           z-index: 2;
@@ -288,16 +288,16 @@ export default function Contact() {
         .letter-out {
           /* Slide up out of the envelope and grow taller to feel like
              a folded sheet unfurling */
-          transform: translateY(-40%);
-          top: 0;
-          height: 130%;
+          transform: translateY(-35%);
+          top: 10%;
+          height: 125%;
           z-index: 4;
           opacity: 1;
         }
         .letter-inner {
           opacity: 0;
           transition: opacity 0.5s 0.4s ease;
-          padding: 42px 24px;
+          padding: 48px 32px;
           text-align: center;
           width: 100%;
         }
@@ -318,12 +318,12 @@ export default function Contact() {
           font-style: italic;
           font-weight: 500;
           color: #1c1c19;
-          font-size: clamp(18px, 5vw, 32px);
+          font-size: clamp(18px, 4.5vw, 28px);
           letter-spacing: -0.5px;
           line-height: 1.2;
           white-space: nowrap;     /* keep email on one line — never break the address */
           text-decoration: none;
-          padding: 8px 6px;
+          padding: 10px 8px;
           border-bottom: 2px solid rgba(28,28,25,0.18);
           transition: color 0.4s, border-color 0.4s;
         }
