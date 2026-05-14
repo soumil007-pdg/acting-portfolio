@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Original full-size videos (kept locally as backup)
+public/_originals_backup/
