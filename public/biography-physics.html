@@ -634,25 +634,8 @@
                 z-index: 200;
             }
 
-            /* Score panel — fixed top-left so it stays visible while reading */
-            #score-panel {
-                position: fixed;
-                top: 84px;                  /* clear of the React header */
-                left: 18px;
-                z-index: 60;
-            }
-            #score-panel .score-label {
-                font-size: 8px;
-                letter-spacing: 0.5em;
-                margin-bottom: 4px;
-            }
-            #score-panel .score-value {
-                font-size: 44px;
-                letter-spacing: 2px;
-            }
-            #score-panel .score-hint {
-                display: none;
-            }
+            /* Score panel hidden entirely on mobile — orb game is disabled */
+            #score-panel { display: none !important; }
 
             /* ── Section markers — inline editorial chips ─────────────────── */
             .section-marker {
@@ -1537,6 +1520,9 @@
             score = 0;
             updateScoreDisplay();
             if (orbSpawnTimer) clearInterval(orbSpawnTimer);
+            // Orbs / shooting game disabled on mobile — touch can't aim a wand
+            // accurately and the extra physics bodies just hurt frame rate.
+            if (IS_MOBILE) return;
             // First orb appears almost immediately, then on a steady interval
             setTimeout(spawnOrb, 400);
             orbSpawnTimer = setInterval(spawnOrb, 1700);
