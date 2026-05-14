@@ -170,26 +170,10 @@ export default function Contact() {
           height: clamp(180px, 45vw, 270px);
           cursor: pointer;
           perspective: 1200px;
-          animation: envFloat 4s ease-in-out infinite;
-          /* Subtle drop-in when entering envelope phase */
-          animation-name: envEnter, envFloat;
-          animation-duration: 0.9s, 4s;
-          animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1), ease-in-out;
-          animation-delay: 0s, 0.9s;
-          animation-iteration-count: 1, infinite;
-          animation-fill-mode: both, both;
+          opacity: 1;
         }
         .envelope-opened {
           cursor: default;
-          animation: none;
-        }
-        @keyframes envEnter {
-          from { opacity: 0; transform: translateY(40px) scale(0.92); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes envFloat {
-          0%, 100% { transform: translateY(0); }
-          50%      { transform: translateY(-6px); }
         }
 
         /* Back panel of the envelope (the body) */
@@ -313,7 +297,7 @@ export default function Contact() {
         .letter-inner {
           opacity: 0;
           transition: opacity 0.5s 0.4s ease;
-          padding: 24px 14px;
+          padding: 42px 24px;
           text-align: center;
           width: 100%;
         }
@@ -322,11 +306,11 @@ export default function Contact() {
         }
         .letter-eyebrow {
           font-family: 'Work Sans', sans-serif;
-          font-size: 9px;
+          font-size: 11px;
           letter-spacing: 0.4em;
           text-transform: uppercase;
           color: rgba(28,28,25,0.45);
-          margin-bottom: 14px;
+          margin-bottom: 20px;
         }
         .letter-email {
           display: inline-block;
@@ -334,13 +318,13 @@ export default function Contact() {
           font-style: italic;
           font-weight: 500;
           color: #1c1c19;
-          font-size: clamp(13px, 4vw, 22px);
+          font-size: clamp(18px, 5vw, 32px);
           letter-spacing: -0.5px;
-          line-height: 1.1;
+          line-height: 1.2;
           white-space: nowrap;     /* keep email on one line — never break the address */
           text-decoration: none;
-          padding: 6px 4px;
-          border-bottom: 1px solid rgba(28,28,25,0.18);
+          padding: 8px 6px;
+          border-bottom: 2px solid rgba(28,28,25,0.18);
           transition: color 0.4s, border-color 0.4s;
         }
         .letter-email:hover {
