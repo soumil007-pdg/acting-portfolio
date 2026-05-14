@@ -19,39 +19,31 @@ export default function Contact() {
   const [phase, setPhase] = useState('headline');
 
   // ── Pre-compute random trajectories so they don't change between renders ──
-  const SWARM_COUNT = 12;
+  const SWARM_COUNT = 18;
   const BURST_COUNT = 10;
 
   const swarmFlights = useMemo(() => {
-    // Each envelope enters from a random off-screen position, flies through,
-    // and exits the opposite side. Pure CSS keyframes do the work; we just
-    // hand them custom CSS variables.
+    // BURST + FALL: every envelope launches from the centre, explodes
+    // outward and upward, then gravity pulls it down off the bottom.
+    // The very last "stayer" floats up and decelerates back to centre.
     const flights = [];
     for (let i = 0; i < SWARM_COUNT; i++) {
-      // Pick an "edge" to start from (0=top, 1=right, 2=bottom, 3=left)
-      const startEdge = i % 4;
-      const startOffset = (Math.random() - 0.5) * 80; // % offset along that edge
-      let fromX, fromY, toX, toY;
-      if (startEdge === 0) {
-        fromX = startOffset; fromY = -120;
-        toX = -startOffset;  toY = 120;
-      } else if (startEdge === 1) {
-        fromX = 120; fromY = startOffset;
-        toX = -120;  toY = -startOffset;
-      } else if (startEdge === 2) {
-        fromX = startOffset; fromY = 120;
-        toX = -startOffset;  toY = -120;
-      } else {
-        fromX = -120; fromY = startOffset;
-        toX = 120;    toY = -startOffset;
-      }
+      // Pick a launch direction (-180° to 180° measured from straight up)
+      // so envelopes fly out in all directions, weighted slightly upward.
+      const launchAngle = (Math.random() - 0.5) * Math.PI * 1.6; // -144° to 144°
+      const launchPower = 50 + Math.random() * 40;               // vw/vh units
+      const peakX = Math.sin(launchAngle) * launchPower;
+      const peakY = -Math.abs(Math.cos(launchAngle)) * (30 + Math.random() * 30);
+      // After peak, gravity drags everything down past the bottom edge.
+      const fallX = peakX + (Math.random() - 0.5) * 30;
+      const fallY = 130 + Math.random() * 40;
       flights.push({
-        fromX, fromY, toX, toY,
-        rotateStart: (Math.random() - 0.5) * 60,
-        rotateEnd: (Math.random() - 0.5) * 720,
-        scale: 0.35 + Math.random() * 0.35,
-        duration: 1.0 + Math.random() * 0.5,   // seconds
-        delay: Math.random() * 0.4,
+        peakX, peakY, fallX, fallY,
+        rotateMid: (Math.random() - 0.5) * 360,
+        rotateEnd: (Math.random() - 0.5) * 1080,
+        scale: 0.32 + Math.random() * 0.32,
+        duration: 1.6 + Math.random() * 0.6,
+        delay: Math.random() * 0.08,           // burst out together — barely staggered
       });
     }
     return flights;
@@ -79,9 +71,10 @@ export default function Contact() {
       return () => clearTimeout(t);
     }
     if (phase === 'swarm') {
-      // Total swarm time ≈ longest (delay + duration) ≈ 1.6s,
-      // then a brief settle pause before becoming interactive.
-      const t = setTimeout(() => setPhase('envelope'), 1700);
+      // Wait for the longest swarm flight to clear (duration + delay ≈ 2.2s)
+      // before flipping to interactive. The chosen envelope blooms in earlier
+      // via CSS so it's already visible when the others fall away.
+      const t = setTimeout(() => setPhase('envelope'), 2200);
       return () => clearTimeout(t);
     }
   }, [phase]);
@@ -153,11 +146,11 @@ export default function Contact() {
                 key={i}
                 className="swarm-envelope"
                 style={{
-                  '--from-x': `${f.fromX}vw`,
-                  '--from-y': `${f.fromY}vh`,
-                  '--to-x': `${f.toX}vw`,
-                  '--to-y': `${f.toY}vh`,
-                  '--rot-start': `${f.rotateStart}deg`,
+                  '--peak-x': `${f.peakX}vw`,
+                  '--peak-y': `${f.peakY}vh`,
+                  '--fall-x': `${f.fallX}vw`,
+                  '--fall-y': `${f.fallY}vh`,
+                  '--rot-mid': `${f.rotateMid}deg`,
                   '--rot-end': `${f.rotateEnd}deg`,
                   '--scale': f.scale,
                   '--dur': `${f.duration}s`,
@@ -173,10 +166,11 @@ export default function Contact() {
         {/* ── Act 3 + 4 + 5: Chosen envelope ──────────────────────── */}
         <div
           className={`relative flex flex-col items-center justify-center transition-opacity duration-700 ${
-            phase === 'envelope' || phase === 'burst' || phase === 'letter'
+            phase === 'swarm' || phase === 'envelope' || phase === 'burst' || phase === 'letter'
               ? 'opacity-100'
               : 'opacity-0 pointer-events-none'
           }`}
+          style={{ pointerEvents: phase === 'envelope' ? 'auto' : 'none' }}
         >
           {/* Burst pages — only rendered during burst phase */}
           {phase === 'burst' && (
@@ -203,9 +197,11 @@ export default function Contact() {
             aria-label="Open envelope"
             tabIndex={0}
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && openEnvelope()}
-            className={`envelope ${phase === 'envelope' ? 'envelope-settled' : ''} ${
-              phase === 'burst' ? 'envelope-bursting' : ''
-            } ${phase === 'letter' ? 'envelope-gone' : ''}`}
+            className={`envelope ${
+              phase === 'swarm' || phase === 'envelope' ? 'envelope-settled' : ''
+            } ${phase === 'burst' ? 'envelope-bursting' : ''} ${
+              phase === 'letter' ? 'envelope-gone' : ''
+            }`}
           >
             <div className="env-back" />
             <div className="env-fold-left" />
@@ -280,19 +276,27 @@ export default function Contact() {
           height: clamp(76px, 16vw, 116px);
           margin-left: calc(clamp(120px, 24vw, 180px) / -2);
           margin-top: calc(clamp(76px, 16vw, 116px) / -2);
-          animation: swarmFly var(--dur) cubic-bezier(0.4, 0, 0.6, 1) var(--delay) forwards;
+          animation: burstFall var(--dur) cubic-bezier(0.34, 0.05, 0.6, 1) var(--delay) forwards;
           opacity: 0;
         }
-        @keyframes swarmFly {
+        /* BURST + FALL: launch from centre with energy → arc to peak →
+           then gravity drags down past the bottom edge with rotation. */
+        @keyframes burstFall {
           0% {
             opacity: 0;
-            transform: translate(var(--from-x), var(--from-y)) rotate(var(--rot-start)) scale(var(--scale));
+            transform: translate(0, 0) rotate(0deg) scale(calc(var(--scale) * 0.4));
           }
-          15% { opacity: 0.9; }
-          85% { opacity: 0.9; }
+          10% {
+            opacity: 1;
+          }
+          40% {
+            opacity: 1;
+            transform: translate(var(--peak-x), var(--peak-y)) rotate(var(--rot-mid)) scale(var(--scale));
+          }
+          85% { opacity: 1; }
           100% {
             opacity: 0;
-            transform: translate(var(--to-x), var(--to-y)) rotate(var(--rot-end)) scale(var(--scale));
+            transform: translate(var(--fall-x), var(--fall-y)) rotate(var(--rot-end)) scale(var(--scale));
           }
         }
 
@@ -304,13 +308,18 @@ export default function Contact() {
           cursor: pointer;
           perspective: 1200px;
         }
+        /* The chosen envelope blooms in DURING the swarm — matching the
+           burst envelopes' tiny starting scale, so visually it feels
+           like 'one of them grew into place' while the others flew off. */
         .envelope-settled {
-          animation: envSettle 0.6s cubic-bezier(0.22, 1, 0.36, 1) both,
-                     envFloat 4s 0.6s ease-in-out infinite;
+          animation: envBloom 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both,
+                     envFloat 4s 1.7s ease-in-out infinite;
         }
-        @keyframes envSettle {
-          from { opacity: 0; transform: translateY(-40px) rotate(-12deg) scale(0.7); }
-          to   { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+        @keyframes envBloom {
+          0%   { opacity: 0; transform: scale(0.18) rotate(-4deg); }
+          30%  { opacity: 1; transform: scale(0.4) rotate(-2deg); }
+          70%  { opacity: 1; transform: scale(1.05) rotate(1deg); }
+          100% { opacity: 1; transform: scale(1) rotate(0); }
         }
         @keyframes envFloat {
           0%, 100% { transform: translateY(0); }
