@@ -50,7 +50,7 @@ export default function SideNav() {
           <Link to="/focus" className="staggered-item text-[#fcf9f4] opacity-80 text-3xl font-headline transition-all duration-700 hover:pl-4 md:hover:pl-0 md:hover:-translate-y-2 hover:text-[#a12d22] hover:opacity-100" style={{ transitionDelay: '0.3s' }}>Work</Link>
           <Link to="/biography" className="staggered-item text-[#fcf9f4] opacity-80 text-3xl font-headline transition-all duration-700 hover:pl-4 md:hover:pl-0 md:hover:-translate-y-2 hover:text-[#a12d22] hover:opacity-100" style={{ transitionDelay: '0.4s' }}>Biography</Link>
           <Link to="/awards" className="staggered-item text-[#fcf9f4] opacity-80 text-3xl font-headline transition-all duration-700 hover:pl-4 md:hover:pl-0 md:hover:-translate-y-2 hover:text-[#a12d22] hover:opacity-100" style={{ transitionDelay: '0.5s' }}>Awards</Link>
-          <Link to="#" className="staggered-item text-[#fcf9f4] opacity-80 text-3xl font-headline transition-all duration-700 hover:pl-4 md:hover:pl-0 md:hover:-translate-y-2 hover:text-[#a12d22] hover:opacity-100" style={{ transitionDelay: '0.6s' }}>Get in touch</Link>
+          <Link to="/contact" className="staggered-item text-[#fcf9f4] opacity-80 text-3xl font-headline transition-all duration-700 hover:pl-4 md:hover:pl-0 md:hover:-translate-y-2 hover:text-[#a12d22] hover:opacity-100" style={{ transitionDelay: '0.6s' }}>Get in touch</Link>
         </nav>
       </div>
     </>

@@ -7,6 +7,7 @@ import Biography from './pages/Biography';
 import Awards from './pages/Awards';
 import DragonPage from './pages/DragonPage';
 import DragonPlayground from './pages/DragonPlayground';
+import Contact from './pages/Contact';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/awards" element={<Awards />} />
         <Route path="/dragon" element={<DragonPage />} />
         <Route path="/dragon-playground" element={<DragonPlayground />} />
+        <Route path="/contact" element={<Contact />} />
       </Routes>
     </BrowserRouter>
   );
