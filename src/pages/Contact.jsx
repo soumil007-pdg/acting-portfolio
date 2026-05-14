@@ -263,7 +263,7 @@ export default function Contact() {
         .letter {
           position: absolute;
           left: 6%; right: 6%;
-          top: 15%;
+          top: 25%;
           height: 85%;
           background: #fbf6ee;
           border-radius: 3px;
@@ -288,8 +288,8 @@ export default function Contact() {
         .letter-out {
           /* Slide up out of the envelope and grow taller to feel like
              a folded sheet unfurling */
-          transform: translateY(-35%);
-          top: 10%;
+          transform: translateY(-30%);
+          top: 18%;
           height: 125%;
           z-index: 4;
           opacity: 1;
