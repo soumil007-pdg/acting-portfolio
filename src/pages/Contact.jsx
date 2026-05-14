@@ -19,13 +19,13 @@ export default function Contact() {
   const [phase, setPhase] = useState('headline');
 
   // ── Pre-compute random trajectories so they don't change between renders ──
-  const SWARM_COUNT = 30;
-  const BURST_COUNT = 18;
+  const SWARM_COUNT = 12;
+  const BURST_COUNT = 8;
 
   const swarmFlights = useMemo(() => {
     // BURST + FALL: every envelope launches from the centre, explodes
     // outward and upward, then gravity pulls it down off the bottom.
-    // Depth variation: smaller scale = farther away, larger scale = closer
+    // The very last "stayer" floats up and decelerates back to centre.
     const flights = [];
     for (let i = 0; i < SWARM_COUNT; i++) {
       // Pick a launch direction (-180° to 180° measured from straight up)
@@ -41,7 +41,7 @@ export default function Contact() {
         peakX, peakY, fallX, fallY,
         rotateMid: (Math.random() - 0.5) * 360,
         rotateEnd: (Math.random() - 0.5) * 1080,
-        scale: 0.15 + Math.random() * 1.05,   // 0.15 to 1.2 for depth variation
+        scale: 0.5,
         duration: 1.6 + Math.random() * 0.6,
         delay: Math.random() * 0.08,           // burst out together — barely staggered
       });
@@ -51,7 +51,6 @@ export default function Contact() {
 
   const burstPages = useMemo(() => {
     // BURST_COUNT pages fly outward in evenly-spaced directions, with jitter
-    // Depth variation: smaller scale = farther away, larger scale = closer
     return Array.from({ length: BURST_COUNT }, (_, i) => {
       const angle = (i / BURST_COUNT) * 360 + (Math.random() - 0.5) * 30;
       const distance = 360 + Math.random() * 220;
@@ -60,7 +59,6 @@ export default function Contact() {
         toX: Math.cos(rad) * distance,
         toY: Math.sin(rad) * distance,
         rotate: (Math.random() - 0.5) * 720,
-        scale: 0.6 + Math.random() * 0.7,     // 0.6 to 1.3 for depth variation
         delay: Math.random() * 0.08,
       };
     });
@@ -185,7 +183,6 @@ export default function Contact() {
                     '--to-x': `${p.toX}px`,
                     '--to-y': `${p.toY}px`,
                     '--rot': `${p.rotate}deg`,
-                    '--scale': p.scale,
                     '--delay': `${p.delay}s`,
                   }}
                 />
@@ -461,15 +458,15 @@ export default function Contact() {
         @keyframes burstFly {
           0% {
             opacity: 0;
-            transform: translate(0, 0) rotate(0deg) scale(calc(var(--scale) * 0.4));
+            transform: translate(0, 0) rotate(0deg) scale(0.4);
           }
           18% {
             opacity: 1;
-            transform: translate(calc(var(--to-x) * 0.18), calc(var(--to-y) * 0.18)) rotate(calc(var(--rot) * 0.2)) scale(var(--scale));
+            transform: translate(calc(var(--to-x) * 0.18), calc(var(--to-y) * 0.18)) rotate(calc(var(--rot) * 0.2)) scale(1);
           }
           100% {
             opacity: 0;
-            transform: translate(var(--to-x), var(--to-y)) rotate(var(--rot)) scale(calc(var(--scale) * 0.7));
+            transform: translate(var(--to-x), var(--to-y)) rotate(var(--rot)) scale(0.7);
           }
         }
 
