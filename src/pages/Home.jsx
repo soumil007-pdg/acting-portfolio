@@ -160,6 +160,12 @@ function MobileHome({ projects, navigate }) {
 
         {loop.map((proj, i) => {
           const isActive = i === active;
+          // Only mount real <video> elements for the active card and its
+          // immediate neighbors. iOS Safari caps concurrent video playback
+          // (~16 max), and rendering 44 <video>s at once means NONE of them
+          // autoplay reliably. The other cards get a cheap black placeholder.
+          const distance = Math.abs(i - active);
+          const renderVideo = distance <= 2;
           return (
             <div
               key={i}
@@ -176,33 +182,32 @@ function MobileHome({ projects, navigate }) {
               onClick={() => isActive ? navigate('/focus') : centerCardAt(i, 'smooth')}
             >
               <div className="relative w-full h-full overflow-hidden rounded-[4px] shadow-[0_18px_40px_rgba(0,0,0,0.18)] bg-black">
+                {renderVideo ? (
                 <video
                   src={proj.hoverVideo}
                   autoPlay muted loop playsInline preload="auto"
-                  // disable remote playback / native fullscreen on iOS so the video
-                  // never falls back to a tap-to-play poster overlay
                   disableRemotePlayback
                   disablePictureInPicture
                   x-webkit-airplay="deny"
                   controls={false}
                   ref={(el) => {
                     if (!el) return;
-                    // Belt + suspenders: explicitly mute (some iOS versions need this
-                    // set as a property, not just the attribute) and kick off play().
                     el.muted = true;
                     el.defaultMuted = true;
                     el.setAttribute('webkit-playsinline', 'true');
                     const tryPlay = () => {
                       const p = el.play();
-                      if (p && p.catch) p.catch(() => {/* will retry on next gesture */});
+                      if (p && p.catch) p.catch(() => {});
                     };
                     tryPlay();
-                    // Retry once metadata is loaded (covers cold-cache iOS)
                     el.addEventListener('loadeddata', tryPlay, { once: true });
                   }}
                   className="absolute inset-0 w-full h-full object-cover"
                   style={{ objectPosition: proj.videoPosition || 'center' }}
                 />
+                ) : (
+                  <div className="absolute inset-0 w-full h-full bg-black" />
+                )}
               </div>
             </div>
           );

@@ -209,6 +209,18 @@ function MobileStack() {
               `radial-gradient(ellipse at 30% 30%, ${film.bgFrom} 0%, ${film.bgTo} 90%)`
           }}
         >
+          {/* Vertical sprocket strips — left + right edges, like 35mm film */}
+          <div className="sprocket-col sprocket-col-left">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <div key={i} className="sprocket-hole-v" />
+            ))}
+          </div>
+          <div className="sprocket-col sprocket-col-right">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <div key={i} className="sprocket-hole-v" />
+            ))}
+          </div>
+
           <div className="mobile-frame-inner">
             <div className="frame-clapper" style={{ borderColor: film.accent }}>
               <span className="clapper-label">Film N°</span>
@@ -748,15 +760,41 @@ export default function Awards() {
         }
         .intro-title-mobile { font-size: 56px; letter-spacing: -2px; }
         .mobile-frame {
-          padding: 60px 28px 80px;
+          padding: 60px 56px 80px;        /* extra side padding so text clears the sprockets */
           position: relative;
           border-top: 1px solid rgba(245, 235, 216, 0.06);
+          overflow: hidden;
         }
         .mobile-frame-inner {
           max-width: 600px;
           margin: 0 auto;
           position: relative;
           padding-top: 80px;
+        }
+        /* Vertical filmstrip sprockets — sides of every mobile frame */
+        .sprocket-col {
+          position: absolute;
+          top: 0; bottom: 0;
+          width: 36px;
+          background: linear-gradient(90deg, #0a0705, #050302);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-around;
+          padding: 18px 0;
+          z-index: 5;
+          box-shadow: 0 0 30px rgba(0,0,0,0.6);
+        }
+        .sprocket-col-left  { left: 0; }
+        .sprocket-col-right { right: 0; }
+        .sprocket-hole-v {
+          width: 22px;
+          height: 28px;
+          background: #1d1812;
+          border-radius: 4px;
+          box-shadow:
+            inset 0 1px 0 rgba(0,0,0,0.6),
+            inset 0 -1px 0 rgba(255,255,255,0.03);
         }
         .frame-title-mobile {
           font-size: clamp(54px, 12vw, 100px);

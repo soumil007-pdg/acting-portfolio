@@ -134,7 +134,7 @@ function MobileFocus({ projects, navigate }) {
             onClick={() => window.open(featured.link, '_blank', 'noopener')}
             className="mt-6 inline-flex items-center gap-2 border border-white/30 px-5 py-3 font-label text-[10px] tracking-[0.4em] uppercase hover:bg-white/10 transition-colors"
           >
-            Watch Film <span aria-hidden="true">↗</span>
+            Watch Film
           </button>
         </div>
 
@@ -214,7 +214,7 @@ function MobileFocus({ projects, navigate }) {
                   {proj.desc}
                 </p>
                 <div className="mt-3 inline-flex items-center gap-1 font-label text-[10px] tracking-[0.35em] uppercase opacity-70">
-                  Watch <span aria-hidden="true">↗</span>
+                  Watch
                 </div>
               </div>
             </article>

@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Preload the hero portrait so it shows up immediately on first paint -->
+    <link rel="preload" as="image" href="/soumil-main.jpg" fetchpriority="high">
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -554,10 +556,10 @@
                 color: rgba(255,255,255,0.85);
             }
             #portrait-label {
-                font-size: 76px;
-                bottom: 90px;             /* leave room for the role line */
+                font-size: 64px;
+                bottom: 118px;            /* leave clear room for role line below */
                 left: 22px;
-                letter-spacing: -3.5px;
+                letter-spacing: -3px;
                 line-height: 0.85;
                 text-shadow: 0 6px 24px rgba(0,0,0,0.6);
             }
@@ -565,7 +567,7 @@
             #portrait-container .mobile-role {
                 position: absolute;
                 left: 24px;
-                bottom: 72px;
+                bottom: 64px;
                 z-index: 4;
                 font-family: 'Newsreader', serif;
                 font-style: italic;
@@ -702,7 +704,7 @@
     <div id="lumos-glow"></div>
 
     <div id="portrait-container">
-        <img id="portrait" src="/soumil-main.jpg" alt="Soumil" />
+        <img id="portrait" src="/soumil-main.jpg" alt="Soumil" fetchpriority="high" decoding="async" />
         <div id="portrait-overlay"></div>
         <div id="portrait-tag">Cinematic Legacy</div>
         <div id="portrait-label">Soumil.</div>
@@ -745,8 +747,19 @@
         const Engine = Matter.Engine, Runner = Matter.Runner, Bodies = Matter.Bodies,
               Composite = Matter.Composite, Body = Matter.Body, Events = Matter.Events;
 
-        const engine = Engine.create();
-        Runner.run(Runner.create(), engine);
+        // Detect mobile so we can run a lighter physics config (cheaper iterations,
+        // sleeping enabled). Desktop keeps full fidelity.
+        const IS_MOBILE = window.matchMedia('(max-width: 767px)').matches;
+
+        const engine = Engine.create({
+            enableSleeping: true,                   // bodies that come to rest stop being simulated
+            positionIterations: IS_MOBILE ? 4 : 6,  // default 6 — fewer = less CPU
+            velocityIterations: IS_MOBILE ? 3 : 4,  // default 4
+            constraintIterations: IS_MOBILE ? 1 : 2 // default 2
+        });
+        // Lock the runner to the device's actual frame rate (so we don't try to
+        // simulate at 60Hz on a 120Hz display, or vice-versa).
+        Runner.run(Runner.create({ isFixed: true, delta: 1000 / 60 }), engine);
 
         // ground is rebuilt each time inside buildLayout
         let groundBody = null;
