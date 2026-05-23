@@ -1358,10 +1358,8 @@
                     y: (dy / dist) * 0.0035 - 0.002
                 });
 
-                // T5: heal in 1500 ms (was 3000) — halves the physics simulation
-                // window per struck char, keeping the engine load manageable
                 entity.healTimer = setTimeout(() => {
-                    entity.htmlNode.style.transition = 'transform 0.8s ease-in-out, color 0.8s, text-shadow 0.8s';
+                    entity.htmlNode.style.transition = 'transform 1s ease-in-out, color 1s, text-shadow 1s';
                     // Restore color — pick whichever variant matches current theme
                     const isDark = document.body.classList.contains('wand-dark');
                     entity.htmlNode.style.color = isDark
@@ -1379,8 +1377,8 @@
                     entity.returnTimer = setTimeout(() => {
                         entity.htmlNode.style.transition = 'color 0.3s, text-shadow 0.3s';
                         entity.isParked = true;   // park again — afterUpdate skips it
-                    }, 800);
-                }, 1500);
+                    }, 1000);
+                }, 3000);
             });
         });
 
@@ -1701,13 +1699,12 @@
             // Document coords so bullets hit chars even after the page scrolls
             const docX = clientX;
             const docY = clientY + window.scrollY;
-            // T2: smaller, lighter, slower bullet — wakes fewer chars per shot
-            const bullet = Bodies.circle(docX, docY, 16, {
-                label: 'bullet', restitution: 0.9, density: 0.4
+            const bullet = Bodies.circle(docX, docY, 30, {
+                label: 'bullet', restitution: 0.9, density: 1.0
             });
             const dx = (W / 2) - clientX, dy = (H / 2) - clientY;
             const a = Math.atan2(dy, dx);
-            Body.setVelocity(bullet, { x: Math.cos(a) * 24, y: Math.sin(a) * 24 });
+            Body.setVelocity(bullet, { x: Math.cos(a) * 40, y: Math.sin(a) * 40 });
             Composite.add(engine.world, bullet);
             setTimeout(() => Composite.remove(engine.world, bullet), 2000);
         }
