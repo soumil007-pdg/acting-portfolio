@@ -1293,6 +1293,34 @@
                     `translate3d(${x}px, ${y}px, 0) rotate(${angle}rad)`;
             }
             updateOrbs();
+
+            // Manual bullet-orb proximity check — replaces unreliable sensor
+            // collision events. Static bodies moved via Body.setPosition have no
+            // velocity from the engine's perspective, so the broad-phase misses
+            // fast bullets entirely. Distance check catches every frame.
+            if (activeBullets.length && orbs.length) {
+                for (let bi = 0; bi < activeBullets.length; bi++) {
+                    const bPos = activeBullets[bi].position;
+                    for (let oi = orbs.length - 1; oi >= 0; oi--) {
+                        const o = orbs[oi];
+                        if (o.removed) continue;
+                        const odx = bPos.x - o.body.position.x;
+                        const ody = bPos.y - o.body.position.y;
+                        const dist = Math.sqrt(odx * odx + ody * ody);
+                        // Hit if bullet edge overlaps orb edge (bullet r=30, orb r=size/2)
+                        if (dist < 30 + o.size / 2) {
+                            score += o.points;
+                            updateScoreDisplay();
+                            showScorePop(o.body.position.x, o.body.position.y, o.points);
+                            for (let k = 0; k < 14; k++) {
+                                spawnParticle(o.body.position.x, o.body.position.y);
+                            }
+                            removeOrb(o);
+                        }
+                    }
+                }
+            }
+
             updateParticles(); // T3: draw canvas particles — no DOM churn
         });
 
@@ -1460,6 +1488,9 @@
         let score = 0;
         let orbSpawnTimer = null;
         const orbs = [];
+        // Track live bullets so afterUpdate can do manual proximity checks
+        // (Matter.js static-sensor collision is unreliable for fast-moving bullets)
+        const activeBullets = [];
         const scoreEl = document.getElementById('score-value');
 
         function fmtScore(n) {
@@ -1691,7 +1722,12 @@
             const a = Math.atan2(dy, dx);
             Body.setVelocity(bullet, { x: Math.cos(a) * 40, y: Math.sin(a) * 40 });
             Composite.add(engine.world, bullet);
-            setTimeout(() => Composite.remove(engine.world, bullet), 2000);
+            activeBullets.push(bullet);
+            setTimeout(() => {
+                Composite.remove(engine.world, bullet);
+                const bi = activeBullets.indexOf(bullet);
+                if (bi > -1) activeBullets.splice(bi, 1);
+            }, 2000);
         }
 
         // Suppress the synthetic mousedown that fires ~300ms after touchstart
