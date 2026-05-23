@@ -99,7 +99,7 @@ export default function Contact() {
             {/* The letter — hidden inside until flap opens, then slides up */}
             <div className={`letter ${phase === 'envelope' ? 'letter-tucked' : ''} ${phase === 'letter' ? 'letter-out' : ''}`}>
               <div className="letter-inner">
-                <div className="letter-eyebrow">— A reply</div>
+                <div className="letter-eyebrow">— An Invitation </div>
                 <a href={`mailto:${email}`} className="letter-email">
                   {email}
                 </a>

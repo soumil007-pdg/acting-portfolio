@@ -1125,6 +1125,40 @@
                 document.body.style.minHeight = '';
                 container.style.minHeight = '';
             }
+
+            // ── Anchor the bookshelf link under the COORDINATES section ─────
+            // On desktop, we want the "From my Bookshelf" link to live in the
+            // editorial flow directly under the COORDINATES block, not float
+            // detached at bottom-right. We keep position:fixed (the page never
+            // scrolls on desktop, so fixed == absolute here) but set top/left
+            // from the computed layout instead of hard-coded bottom/right.
+            const bookshelfEl = document.getElementById('bookshelf');
+            if (bookshelfEl && !MOBILE) {
+                // currentY is the bottom of COORDINATES after the loop. Add a
+                // breath gap so the divider rule sits clearly under the
+                // coordinate lines. We deliberately don't clamp upwards: if a
+                // viewport is shorter than the layout's natural height, the
+                // bookshelf would overlap body text — better to let it drop
+                // off-screen than to collide with the biography paragraphs.
+                const anchorTop = Math.round(currentY + 36);
+                bookshelfEl.style.top    = `${anchorTop}px`;
+                bookshelfEl.style.left   = `${startX}px`;
+                bookshelfEl.style.right  = 'auto';
+                bookshelfEl.style.bottom = 'auto';
+                // Hide if it would otherwise overlap content / extend past
+                // the viewport bottom. Conservative threshold based on the
+                // bookshelf's collapsed (no-book-loaded) height + a margin.
+                const bookshelfApproxH = 50;
+                bookshelfEl.style.visibility =
+                    (anchorTop + bookshelfApproxH > H) ? 'hidden' : 'visible';
+            } else if (bookshelfEl && MOBILE) {
+                // Mobile already hides the bookshelf via CSS, but clear any
+                // inline overrides we may have set on a previous desktop pass.
+                bookshelfEl.style.top = '';
+                bookshelfEl.style.left = '';
+                bookshelfEl.style.right = '';
+                bookshelfEl.style.bottom = '';
+            }
         }
 
         // ── Mobile hero overlays (role line + scroll cue) ────────────────
