@@ -1323,25 +1323,10 @@
                 const entity = connectedEntities.find(e => e.physicsBody === charBody);
                 if (!entity) return;
 
-                // T2: cap concurrent dynamic chars at 40 — prevents physics avalanche
-                // when a fast figure-8 wakes hundreds of chars simultaneously
-                if (!entity.isParked) {
-                    // Already dynamic — just reset its heal timer, don't count again
-                } else {
-                    let activeDynamic = 0;
-                    for (let k = 0; k < connectedEntities.length; k++) {
-                        if (!connectedEntities[k].isParked) activeDynamic++;
-                    }
-                    if (activeDynamic >= 40) return; // at capacity — skip this hit
-                }
-
                 clearTimeout(entity.healTimer);
                 clearTimeout(entity.returnTimer);
 
-                // T5: no transform transition while physics is driving the char —
-                // prevents the browser interpolating between every physics tick.
-                // Color-only transitions are fine (they don't affect layout/transform).
-                entity.htmlNode.style.transition = 'color 0.2s, text-shadow 0.2s';
+                entity.htmlNode.style.transition = 'color 0.3s, text-shadow 0.3s';
                 Body.setStatic(charBody, false);
                 entity.isParked = false;   // wake it up — afterUpdate will start syncing it
                 const c = themeColors();
