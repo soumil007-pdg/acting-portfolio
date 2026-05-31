@@ -714,7 +714,7 @@
     <div id="text-container"></div>
     <div id="wand"></div>
 
-    <div id="hint" data-desktop="Press &lt;kbd&gt;Ctrl&lt;/kbd&gt;+&lt;kbd&gt;Shift&lt;/kbd&gt;+&lt;kbd&gt;W&lt;/kbd&gt; for Lumos mode" data-mobile="Tap the wand · then tap to cast">Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd> for Lumos mode</div>
+    <div id="hint">Type <kbd>9</kbd> <kbd>3</kbd> <kbd>4</kbd> for Lumos mode</div>
 
     <div id="score-panel">
         <div class="score-label">Lumos Score</div>
@@ -1206,7 +1206,7 @@
             if (!hintEl) return;
             hintEl.innerHTML = isMobileNow()
                 ? 'Tap the wand · then tap to cast'
-                : 'Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd> for Lumos mode';
+                : 'Type <kbd>9</kbd> <kbd>3</kbd> <kbd>4</kbd> for Lumos mode';
         }
 
         // ── T3: Canvas-based particle system — zero DOM churn ───────────
@@ -1659,9 +1659,22 @@
             [...orbs].forEach(removeOrb);
         }
 
+        // Platform 9¾ — type 9, 3, 4 in sequence to enter/exit Lumos mode
+        const _platform = ['9', '3', '4'];
+        let _platformSeq = [];
         document.addEventListener('keydown', e => {
-            if (e.ctrlKey && e.shiftKey && (e.key === 'W' || e.key === 'w')) {
-                toggleWandMode();
+            // Ignore modifier combos (Ctrl+9 etc.) and focus on plain digit presses
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            const expected = _platform[_platformSeq.length];
+            if (e.key === expected) {
+                _platformSeq.push(e.key);
+                if (_platformSeq.length === _platform.length) {
+                    _platformSeq = [];
+                    toggleWandMode();
+                }
+            } else {
+                // Wrong key — reset, but start fresh if they pressed the first digit
+                _platformSeq = e.key === _platform[0] ? [e.key] : [];
             }
         });
 
