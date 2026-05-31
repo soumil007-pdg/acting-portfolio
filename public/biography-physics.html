@@ -35,7 +35,8 @@
             background-color: var(--bg);
             color: var(--ink);
             font-family: 'Work Sans', sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;   /* scrollable on short screens; locked by JS in Lumos mode */
             cursor: crosshair;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -63,7 +64,8 @@
             position: absolute;
             top: 0; left: 0;
             width: 100vw;
-            height: 100vh;
+            min-height: 100vh;
+            height: auto;   /* grows with content so chars below fold are reachable */
             z-index: 10;
             pointer-events: none;
         }
@@ -101,7 +103,7 @@
         }
 
         #wand {
-            position: absolute;
+            position: fixed;
             top: 0; left: 0;
             width: 3px;
             height: 45px;
@@ -116,7 +118,7 @@
         }
 
         .magic-trail {
-            position: absolute;
+            position: fixed;
             top: 0; left: 0;
             width: 12px;
             height: 12px;
@@ -1116,19 +1118,16 @@
                 currentY += sectionHeight + (col.spacing || 20);
             });
 
-            // ── Post-layout: enable scrolling on mobile + reposition ground ──
+            // ── Post-layout: set body height so short-viewport screens can scroll ──
             const totalHeight = currentY + 80;
-            if (MOBILE) {
-                // Make the page scrollable so the user can read past the portrait strip
-                document.body.style.minHeight = `${totalHeight}px`;
-                container.style.minHeight = `${totalHeight}px`;
-                // Drop the ground just below the last line so falling letters stop
-                // where the user can actually see them after scrolling
-                Body.setPosition(groundBody, { x: W / 2, y: totalHeight + 40 });
-            } else {
-                document.body.style.minHeight = '';
-                container.style.minHeight = '';
-            }
+            // Always expand body + container to full content height — on tall screens
+            // nothing scrolls (content fits), on short screens the user can scroll
+            // down to COORDINATES. Lumos mode locks overflow via JS so physics coords
+            // are never affected while shooting.
+            document.body.style.minHeight = `${totalHeight}px`;
+            container.style.height = `${totalHeight}px`;
+            // Ground sits just below last line so falling letters land visibly
+            Body.setPosition(groundBody, { x: W / 2, y: totalHeight + 40 });
 
             // ── Anchor the bookshelf link under the COORDINATES section ─────
             // On desktop, we want the "From my Bookshelf" link to live in the
@@ -1445,6 +1444,16 @@
                 trail.forEach(s => s.style.opacity = isWandMode ? '0.8' : '0');
                 document.body.style.cursor = isWandMode ? 'none' : 'crosshair';
             }
+
+            // Lock scrolling in Lumos mode so physics coords stay accurate.
+            // Scroll to top first so bullets land where letters are.
+            if (isWandMode) {
+                window.scrollTo({ top: 0, behavior: 'instant' });
+                document.body.style.overflowY = 'hidden';
+            } else {
+                document.body.style.overflowY = '';
+            }
+
             hint.style.opacity = isWandMode ? '0' : '1';
 
             // Disable / re-enable the bookshelf link in wand mode
