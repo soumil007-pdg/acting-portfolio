@@ -466,7 +466,7 @@ export default function Home() {
           </button>
         </div>
         <div className="flex items-center space-x-8 pointer-events-auto">
-          <span className="font-label text-[9px] tracking-[0.15rem] uppercase text-on-surface/40">© 2026 Soumil, All Rights Reserved.</span>
+          <span className="font-label text-[9px] tracking-[0.15rem] uppercase text-on-surface/40">© 2026 Soumil</span>
         </div>
       </footer>
     </>
