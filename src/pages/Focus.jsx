@@ -38,7 +38,7 @@ const projects = [
     role: "Actor",
     desc: "Official Selection at the International Ahmedabad Film Festival.",
     video: "/toestip.mp4",
-    link: "https://youtube.com"
+    link: "https://youtu.be/vZgwQ24eY7U?si=d7uDFXI3uJE-IxYa"
   }
 ];
 
