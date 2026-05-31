@@ -449,7 +449,10 @@ export default function Awards() {
           padding: 140px 8vw 110px;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          /* flex-start + auto margins on frame-body = "safe center":
+             content centres when it fits, top-aligns when it overflows.
+             This prevents the clapper from being pushed above the sprocket. */
+          justify-content: flex-start;
           position: relative;
           color: var(--reel-ink);
           overflow: hidden;
@@ -490,6 +493,11 @@ export default function Awards() {
           max-width: 920px;
           width: 100%;
           align-self: center;
+          /* auto margins: distribute spare space equally above + below when
+             content fits (visual centering). When content is too tall, both
+             margins collapse to 0 and content anchors from the top padding. */
+          margin-top: auto;
+          margin-bottom: auto;
           position: relative;
           z-index: 2;
         }
@@ -524,9 +532,9 @@ export default function Awards() {
           font-family: 'Newsreader', serif;
           font-style: italic;
           font-weight: 500;
-          /* Scale with width AND height — short screens get smaller text so the
-             title never wraps and the clapper never floats off its anchor */
-          font-size: clamp(52px, min(11vw, 13vh), 180px);
+          /* Scale with both width AND height — prevents wrapping on short/narrow
+             screens and keeps content within the visible frame on all laptops */
+          font-size: clamp(44px, min(9vw, 11vh), 160px);
           line-height: 0.92;
           letter-spacing: -3px;
           margin: 0;
