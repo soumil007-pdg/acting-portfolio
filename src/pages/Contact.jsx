@@ -100,7 +100,13 @@ export default function Contact() {
             <div className={`letter ${phase === 'envelope' ? 'letter-tucked' : ''} ${phase === 'letter' ? 'letter-out' : ''}`}>
               <div className="letter-inner">
                 <div className="letter-eyebrow">— An Invitation </div>
-                <a href={`mailto:${email}`} className="letter-email">
+                <a
+                  href={`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="letter-email"
+                  onClick={e => e.stopPropagation()}
+                >
                   {email}
                 </a>
                 <div className="letter-foot">Soumil · Delhi</div>
