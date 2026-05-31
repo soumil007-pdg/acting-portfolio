@@ -524,7 +524,9 @@ export default function Awards() {
           font-family: 'Newsreader', serif;
           font-style: italic;
           font-weight: 500;
-          font-size: clamp(72px, 11vw, 180px);
+          /* Scale with width AND height — short screens get smaller text so the
+             title never wraps and the clapper never floats off its anchor */
+          font-size: clamp(52px, min(11vw, 13vh), 180px);
           line-height: 0.92;
           letter-spacing: -3px;
           margin: 0;
@@ -809,6 +811,28 @@ export default function Awards() {
         .mobile-outro {
           padding: 80px 28px 120px;
           text-align: center;
+        }
+
+        /* ─── Short-viewport compression ───────────────────────── */
+        /* Tighten vertical padding so all frame content stays
+           inside the viewport on smaller / scaled laptop screens   */
+        @media (max-height: 760px) {
+          .reel-frame        { padding-top: 90px;  padding-bottom: 75px; }
+          .frame-clapper     { margin-bottom: 16px; }
+          .frame-rule        { margin: 20px 0 16px; }
+          .frame-meta        { margin-bottom: 18px; }
+          .credits           { gap: 8px; }
+        }
+        @media (max-height: 640px) {
+          .reel-frame        { padding-top: 72px;  padding-bottom: 60px; }
+          .frame-clapper     { margin-bottom: 10px; padding: 10px 14px; }
+          .clapper-era       { font-size: 22px; }
+          .frame-rule        { margin: 14px 0 12px; width: 60px; }
+          .frame-meta        { margin-bottom: 12px; }
+          .credits           { gap: 6px; }
+          .credit-honor      { font-size: 20px; }
+          .intro-title,
+          .outro-title       { font-size: clamp(60px, 10vw, 160px); }
         }
       `}</style>
     </>
