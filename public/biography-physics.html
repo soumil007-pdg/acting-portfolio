@@ -908,7 +908,9 @@
                 HEADER_OFFSET = Math.round(0.78 * H) + 110; // start below the 78vh hero + editorial breathing room
             } else {
                 PORTRAIT_WIDTH = 0.38 * W;
-                TEXT_GUTTER = 140;
+                // Scale gutter with viewport — narrow laptops get less dead space
+                // so the text column stays wide enough to read without overflow
+                TEXT_GUTTER = W < 1200 ? 80 : 140;
                 startX = PORTRAIT_WIDTH + TEXT_GUTTER;
                 TEXT_WIDTH = Math.min(W - startX - 80, 620);
                 HEADER_OFFSET = 130;

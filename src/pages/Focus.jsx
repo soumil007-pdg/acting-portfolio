@@ -312,12 +312,15 @@ export default function Focus() {
             target="_blank"
             rel="noreferrer"
             key={`placard-${i}-${currentIndex}`}
-            className={`${flexBasis[i]} h-[90%] bg-surface-container-lowest flex flex-col items-center justify-center py-12 relative z-10 piano-panel shadow-sm transition-all duration-1000 ${collapsed ? 'collapsed' : ''} cursor-pointer group/link hover:bg-[#F2EFEA]`}
+            className={`${flexBasis[i]} h-[90%] bg-surface-container-lowest flex flex-col items-center justify-center py-6 relative z-10 piano-panel shadow-sm transition-all duration-1000 ${collapsed ? 'collapsed' : ''} cursor-pointer group/link hover:bg-[#F2EFEA]`}
             style={{ transitionDelay: collapsed ? delay : delay, textDecoration: 'none' }}
             onTransitionEnd={syncSlices}
           >
             <div className="flex flex-col items-center">
-              <h2 className="vertical-text font-headline text-6xl italic tracking-tighter text-on-surface leading-none group-hover/link:text-primary transition-colors duration-500">{project.title}</h2>
+              <h2
+                className="vertical-text font-headline italic tracking-tighter text-on-surface leading-none group-hover/link:text-primary transition-colors duration-500"
+                style={{ fontSize: 'clamp(28px, 4.5vh, 52px)' }}
+              >{project.title}</h2>
             </div>
           </a>
         );
