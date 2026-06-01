@@ -29,7 +29,7 @@ const FILMS = [
     bgFrom: '#1B0A07',
     bgTo:   '#0A0302',
     awards: [
-      { honor: '3rd Position', venue: 'International Goa Film Festival' }
+      { honor: '2nd Position', venue: 'International Sanskrit Film Festival' }
     ]
   },
   {
