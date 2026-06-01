@@ -27,7 +27,7 @@ const projects = [
     year: "2025",
     era: "II",
     role: "Actor · Camera Assistant",
-    desc: "3rd Position at the International Goa Film Festival.",
+    desc: "2nd Position at the International Sanskrit Film Festival.",
     video: "/anveshanam.mp4",
     link: "https://youtu.be/wJ8Cx9XLewA?si=EpQvMB9xxyFD2BEV"
   },
