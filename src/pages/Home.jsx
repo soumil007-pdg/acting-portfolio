@@ -309,7 +309,7 @@ export default function Home() {
     },
     {
       title: "ANVESHANAM",
-      desc: "Actor and Camera Assistant. Awards: 3rd Position at International Goel Festival Sanskrit.",
+      desc: "Actor and Camera Assistant. Awards: 2nd Position at International Sanskrit Film Festival.",
       staticImg: "...",
       colorImg: "...",
       hoverVideo: "/anveshanam.mp4",
