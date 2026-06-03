@@ -1055,6 +1055,12 @@
                     dropSpan.style.width = `${dropW}px`;
                     dropSpan.style.height = `${dropH}px`;
                     dropSpan.style.lineHeight = '1';
+                    // The 78px drop-cap glyph is taller than its 2-line box, so the
+                    // .physics-char `contain: layout style paint` was clipping the top
+                    // and bottom of M / T. Drop caps must paint outside their box —
+                    // disable containment + allow overflow just for these spans.
+                    dropSpan.style.contain = 'none';
+                    dropSpan.style.overflow = 'visible';
                     dropSpan.dataset.colorVar = 'var(--accent)';
                     container.appendChild(dropSpan);
 
